@@ -1,136 +1,21 @@
 import type { CalendarEvent, Problem, AuthResponse, User, LeaderboardResponse, ProblemAttempt } from "@/lib/types"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:18080/api"
+const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+
+// Google Calendar scopes for OAuth
+const GOOGLE_CALENDAR_SCOPES = [
+  'https://www.googleapis.com/auth/calendar',
+  'https://www.googleapis.com/auth/calendar.events'
+]
 
 // Storage keys
 const STORAGE_KEYS = {
   USERS: "delta_users",
   CURRENT_USER: "delta_current_user",
   PROBLEM_ATTEMPTS: "delta_problem_attempts",
-}
-
-// Get registered users from localStorage or initialize with demo user
-const getRegisteredUsers = (): User[] => {
-  if (typeof window === "undefined") return [getDefaultUser()]
-
-  const storedUsers = localStorage.getItem(STORAGE_KEYS.USERS)
-  if (!storedUsers) {
-    const defaultUsers = [getDefaultUser()]
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(defaultUsers))
-    return defaultUsers
-  }
-
-  return JSON.parse(storedUsers)
-}
-
-// Get default demo user
-const getDefaultUser = (): User => ({
-  id: 1,
-  username: "Demo User",
-  email: "demo@example.com",
-  role: "student",
-  coinBalance: 500,
-})
-
-// Get problem attempts from localStorage
-const getProblemAttempts = (): Record<number, ProblemAttempt[]> => {
-  if (typeof window === "undefined") return {}
-
-  const storedAttempts = localStorage.getItem(STORAGE_KEYS.PROBLEM_ATTEMPTS)
-  return storedAttempts ? JSON.parse(storedAttempts) : {}
-}
-
-// Save problem attempts to localStorage
-const saveProblemAttempts = (attempts: Record<number, ProblemAttempt[]>) => {
-  if (typeof window === "undefined") return
-  localStorage.setItem(STORAGE_KEYS.PROBLEM_ATTEMPTS, JSON.stringify(attempts))
-}
-
-// Update user in the registered users list
-const updateUser = (updatedUser: User) => {
-  const users = getRegisteredUsers()
-  const index = users.findIndex((u) => u.id === updatedUser.id)
-
-  if (index !== -1) {
-    users[index] = updatedUser
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users))
-
-    // Also update current user if it's the same user
-    const currentUser = getCurrentUser()
-    if (currentUser && currentUser.id === updatedUser.id) {
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(updatedUser))
-    }
-  }
-}
-
-// Get current user from localStorage
-const getCurrentUser = (): User | null => {
-  if (typeof window === "undefined") return null
-
-  const storedUser = localStorage.getItem(STORAGE_KEYS.CURRENT_USER)
-  return storedUser ? JSON.parse(storedUser) : null
-}
-
-// Set current user in localStorage
-const setCurrentUser = (user: User) => {
-  if (typeof window === "undefined") return
-  localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user))
-}
-
-// Mock data for problems
-const MOCK_PROBLEMS: Problem[] = [
-  {
-    id: 1,
-    title: "Quadratic Equations",
-    description: "Solve the quadratic equation: x² + 5x + 6 = 0. Find both roots separated by a comma (e.g., -2,-3).",
-    difficulty: "easy",
-    topic: "Algebra",
-    pointValue: 10,
-  },
-  {
-    id: 2,
-    title: "Pythagorean Theorem",
-    description:
-      "Find the hypotenuse of a right triangle with sides of length 3 and 4. Round to 2 decimal places if necessary.",
-    difficulty: "easy",
-    topic: "Geometry",
-    pointValue: 10,
-  },
-  {
-    id: 3,
-    title: "Derivatives",
-    description: "Find the derivative of f(x) = x³ + 2x² - 5x + 3. Write your answer in the form ax² + bx + c.",
-    difficulty: "medium",
-    topic: "Calculus",
-    pointValue: 20,
-  },
-  {
-    id: 4,
-    title: "Integration",
-    description:
-      "Calculate the indefinite integral of f(x) = 2x + sin(x). Write your answer in the form 2x + C where C is the constant of integration.",
-    difficulty: "hard",
-    topic: "Calculus",
-    pointValue: 30,
-  },
-  {
-    id: 5,
-    title: "Probability",
-    description:
-      "If you roll two fair dice, what is the probability of getting a sum of 7? Express your answer as a fraction in lowest terms (e.g., 1/6).",
-    difficulty: "medium",
-    topic: "Statistics",
-    pointValue: 20,
-  },
-]
-
-// Correct answers for problems
-const PROBLEM_ANSWERS: Record<number, string> = {
-  1: "-2,-3",
-  2: "5",
-  3: "3x² + 4x - 5",
-  4: "x² - cos(x) + C",
-  5: "1/6",
+  GOOGLE_AUTH: "delta_google_auth",
 }
 
 // Mock data for calendar events
@@ -161,117 +46,136 @@ const MOCK_EVENTS: CalendarEvent[] = [
   },
 ]
 
-// Mock data for leaderboard
-const MOCK_LEADERBOARD: LeaderboardResponse = {
-  users: [
-    { rank: 1, id: 2, username: "MathWizard", coins: 850 },
-    { rank: 2, id: 3, username: "AlgebraMaster", coins: 720 },
-    { rank: 3, id: 4, username: "GeometryPro", coins: 680 },
-    { rank: 4, id: 5, username: "CalculusKing", coins: 650 },
-    { rank: 5, id: 6, username: "StatisticsQueen", coins: 600 },
-    { rank: 6, id: 1, username: "Demo User", coins: 500 },
-    { rank: 7, id: 7, username: "NumberNinja", coins: 480 },
-    { rank: 8, id: 8, username: "MathExplorer", coins: 450 },
-    { rank: 9, id: 9, username: "ProblemSolver", coins: 420 },
-    { rank: 10, id: 10, username: "LogicLearner", coins: 400 },
-  ],
+// Helper functions for Google Calendar integration
+const googleCalendarHelpers = {
+  // Load the Google API client library
+  loadGoogleApi: async (): Promise<void> => {
+    if (typeof window === 'undefined' || !GOOGLE_API_KEY || !GOOGLE_CLIENT_ID) return
+
+    return new Promise((resolve, reject) => {
+      // Check if gapi is already loaded
+      if (window.gapi && window.gapi.client) {
+        resolve()
+        return
+      }
+
+      // Load gapi script
+      const script = document.createElement('script')
+      script.src = 'https://apis.google.com/js/api.js'
+      script.onload = () => {
+        window.gapi.load('client:auth2', async () => {
+          try {
+            await window.gapi.client.init({
+              apiKey: GOOGLE_API_KEY,
+              clientId: GOOGLE_CLIENT_ID,
+              discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
+              scope: GOOGLE_CALENDAR_SCOPES.join(' ')
+            })
+            resolve()
+          } catch (error) {
+            console.error('Error initializing Google API client:', error)
+            reject(error)
+          }
+        })
+      }
+      script.onerror = (error) => {
+        console.error('Error loading Google API script:', error)
+        reject(error)
+      }
+      document.body.appendChild(script)
+    })
+  },
+
+  // Sign in to Google account
+  signInToGoogle: async (): Promise<gapi.auth2.GoogleUser> => {
+    await googleCalendarHelpers.loadGoogleApi()
+    try {
+      const authInstance = gapi.auth2.getAuthInstance()
+      const user = await authInstance.signIn()
+      
+      // Store auth token in localStorage
+      const token = user.getAuthResponse().id_token
+      localStorage.setItem(STORAGE_KEYS.GOOGLE_AUTH, token)
+      
+      return user
+    } catch (error) {
+      console.error('Google sign in error:', error)
+      throw error
+    }
+  },
+
+  // Check if user is signed in to Google
+  isSignedInToGoogle: (): boolean => {
+    if (typeof window === 'undefined') return false
+    
+    try {
+      const authInstance = gapi.auth2.getAuthInstance()
+      return authInstance && authInstance.isSignedIn.get()
+    } catch (error) {
+      return false
+    }
+  },
+
+  // Sign out from Google account
+  signOutFromGoogle: async (): Promise<void> => {
+    if (typeof window === 'undefined') return
+    
+    try {
+      const authInstance = gapi.auth2.getAuthInstance()
+      if (authInstance) {
+        await authInstance.signOut()
+        localStorage.removeItem(STORAGE_KEYS.GOOGLE_AUTH)
+      }
+    } catch (error) {
+      console.error('Google sign out error:', error)
+      throw error
+    }
+  },
+
+  // Convert our event format to Google Calendar event format
+  toGoogleCalendarEvent: (event: CalendarEvent): gapi.client.calendar.Event => {
+    return {
+      summary: event.title,
+      description: event.description,
+      start: {
+        dateTime: event.startTime,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      },
+      end: {
+        dateTime: event.endTime,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      },
+      // Use eventType as a colorId (Google Calendar uses numeric colorIds)
+      colorId: event.eventType === 'lecture' ? '1' : 
+               event.eventType === 'exam' ? '4' : 
+               event.eventType === 'workshop' ? '2' : '0',
+      // Add custom properties if needed
+      extendedProperties: {
+        private: {
+          eventType: event.eventType,
+          platformEventId: event.id?.toString() || ''
+        }
+      }
+    }
+  },
+
+  // Convert Google Calendar event to our format
+  fromGoogleCalendarEvent: (googleEvent: gapi.client.calendar.Event): CalendarEvent => {
+    const eventType = googleEvent.extendedProperties?.private?.eventType || 'other'
+    
+    return {
+      id: parseInt(googleEvent.extendedProperties?.private?.platformEventId || '0') || 0,
+      googleEventId: googleEvent.id || '',
+      title: googleEvent.summary || '',
+      description: googleEvent.description || '',
+      eventType: eventType as 'lecture' | 'exam' | 'workshop' | 'other',
+      startTime: googleEvent.start?.dateTime || '',
+      endTime: googleEvent.end?.dateTime || '',
+      location: googleEvent.location || undefined,
+      googleCalendarId: googleEvent.organizer?.email || undefined
+    }
+  }
 }
-
-// Mock data for forum posts
-const MOCK_FORUM_POSTS = [
-  {
-    id: 1,
-    authorId: 2,
-    authorName: "MathWizard",
-    title: "Help with Calculus Problem",
-    content: "I'm struggling with this integral: ∫(x²+2x+1)dx. Can someone help me solve it step by step?",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 2,
-    authorId: 3,
-    authorName: "AlgebraMaster",
-    title: "Quadratic Formula Trick",
-    content:
-      "I discovered a neat trick for remembering the quadratic formula. Instead of -b±√(b²-4ac)/2a, think of it as...",
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 3,
-    authorId: 4,
-    authorName: "GeometryPro",
-    title: "Pythagorean Theorem Applications",
-    content:
-      "Beyond finding the hypotenuse, the Pythagorean theorem has many real-world applications. Let's discuss some examples...",
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-]
-
-// Mock data for forum comments
-const MOCK_COMMENTS = [
-  {
-    id: 1,
-    postId: 1,
-    authorId: 3,
-    authorName: "AlgebraMaster",
-    content: "The integral of x²+2x+1 is (x³/3)+x²+x+C. First, you integrate each term separately...",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 2,
-    postId: 1,
-    authorId: 5,
-    authorName: "CalculusKing",
-    content:
-      "Also note that x²+2x+1 can be rewritten as (x+1)², which might make it easier to understand conceptually.",
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-]
-
-// Mock data for visualizations
-const MOCK_VISUALIZATIONS = [
-  {
-    id: 1,
-    title: "Quadratic Function Explorer",
-    description:
-      "Interactive visualization of how parameters affect the graph of a quadratic function f(x) = ax² + bx + c. Adjust the sliders to see how the graph changes.",
-    visualizationType: "interactive",
-    topic: "Algebra",
-    dataPayload: {
-      type: "quadratic",
-      initialParams: { a: 1, b: 0, c: 0 },
-      xRange: [-10, 10],
-      yRange: [-10, 10],
-    },
-  },
-  {
-    id: 2,
-    title: "Normal Distribution Simulator",
-    description:
-      "Explore how mean and standard deviation affect the normal distribution curve. Adjust parameters to see changes in real-time.",
-    visualizationType: "interactive",
-    topic: "Statistics",
-    dataPayload: {
-      type: "normal",
-      initialParams: { mean: 0, stdDev: 1 },
-      xRange: [-4, 4],
-      yRange: [0, 0.5],
-    },
-  },
-  {
-    id: 3,
-    title: "Trigonometric Functions Explorer",
-    description: "Compare sine, cosine, and tangent functions with adjustable amplitude, period, and phase shift.",
-    visualizationType: "interactive",
-    topic: "Trigonometry",
-    dataPayload: {
-      type: "trigonometric",
-      initialParams: { amplitude: 1, period: 1, phaseShift: 0 },
-      xRange: [0, 360],
-      yRange: [-2, 2],
-    },
-  },
-]
 
 // Mock API function that doesn't actually make network requests
 async function mockFetchAPI(endpoint: string, options: RequestInit = {}) {
@@ -280,267 +184,141 @@ async function mockFetchAPI(endpoint: string, options: RequestInit = {}) {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500))
 
-  // Auth endpoints
-  if (endpoint === "/auth/register") {
-    try {
-      const userData = JSON.parse(options.body as string)
-      const users = getRegisteredUsers()
-
-      // Check if email already exists
-      if (users.some((user) => user.email === userData.email)) {
-        throw new Error("Email already registered")
-      }
-
-      // Create new user
-      const newUser: User = {
-        id: users.length + 1,
-        username: userData.username,
-        email: userData.email,
-        role: userData.role,
-        coinBalance: 100, // Starting balance
-      }
-
-      users.push(newUser)
-      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users))
-
-      return { success: true }
-    } catch (error) {
-      console.error("Registration error:", error)
-      throw error
-    }
-  }
-
-  if (endpoint === "/auth/login") {
-    try {
-      const credentials = JSON.parse(options.body as string)
-      const users = getRegisteredUsers()
-
-      // Find user by email
-      const user = users.find((user) => user.email === credentials.email)
-
-      if (!user) {
-        throw new Error("User not found")
-      }
-
-      // In a real app, we would check the password here
-      // For demo purposes, we'll just accept any password
-
-      // Set current user
-      setCurrentUser(user)
-
-      return {
-        success: true,
-        token: "mock-jwt-token-" + user.id,
-        user: user,
-      }
-    } catch (error) {
-      console.error("Login error:", error)
-      throw error
-    }
-  }
-
-  if (endpoint === "/users/me") {
-    const currentUser = getCurrentUser()
-    if (!currentUser) {
-      throw new Error("User not authenticated")
-    }
-    return currentUser
-  }
-
-  // Problems endpoints
-  if (endpoint.startsWith("/problems")) {
-    if (endpoint.includes("/submit")) {
-      try {
-        const problemId = Number.parseInt(endpoint.split("/")[2])
-        const { answer } = JSON.parse(options.body as string)
-        const correctAnswer = PROBLEM_ANSWERS[problemId]
-
-        const isCorrect = answer.trim().toLowerCase() === correctAnswer.toLowerCase()
-
-        // If correct, update user's coin balance
-        if (isCorrect) {
-          const currentUser = getCurrentUser()
-          if (currentUser) {
-            const problem = MOCK_PROBLEMS.find((p) => p.id === problemId)
-            if (problem) {
-              currentUser.coinBalance += problem.pointValue
-              updateUser(currentUser)
-            }
-          }
-        }
-
-        // Track attempt
-        const attempts = getProblemAttempts()
-        if (!attempts[problemId]) {
-          attempts[problemId] = []
-        }
-
-        attempts[problemId].push({
-          id: problemId,
-          title: MOCK_PROBLEMS.find((p) => p.id === problemId)?.title || "",
-          difficulty: MOCK_PROBLEMS.find((p) => p.id === problemId)?.difficulty || "medium",
-          correct: isCorrect,
-          timestamp: new Date().toISOString(),
-        })
-
-        saveProblemAttempts(attempts)
-
-        return {
-          success: true,
-          correct: isCorrect,
-          message: isCorrect
-            ? `Correct! You've earned ${MOCK_PROBLEMS.find((p) => p.id === problemId)?.pointValue || 0} points.`
-            : "Incorrect. Try again!",
-        }
-      } catch (error) {
-        console.error("Submit answer error:", error)
-        throw error
-      }
-    }
-
-    if (endpoint === "/problems/history") {
-      const attempts = getProblemAttempts()
-      return {
-        attempts: Object.values(attempts).flat(),
-      }
-    }
-
-    return MOCK_PROBLEMS
-  }
-
   // Calendar endpoints
   if (endpoint.startsWith("/calendar")) {
+    // Get events
+    if (endpoint.includes("/events") && !options.method) {
+      return MOCK_EVENTS
+    }
+    
+    // Create event
     if (endpoint.includes("/events") && options.method === "POST") {
-      // Handle event creation
-      return { id: Date.now(), ...JSON.parse(options.body as string) }
+      const eventData = JSON.parse(options.body as string)
+      const newEvent = {
+        id: Date.now(),
+        ...eventData
+      }
+      
+      MOCK_EVENTS.push(newEvent)
+      return newEvent
     }
-    return MOCK_EVENTS
-  }
-
-  // Leaderboard endpoints
-  if (endpoint.startsWith("/leaderboard")) {
-    // Get all users and sort by coin balance
-    const users = getRegisteredUsers()
-    const currentUser = getCurrentUser()
-
-    // Create a copy of the mock leaderboard
-    const leaderboard = { ...MOCK_LEADERBOARD }
-
-    // If current user exists and is not the demo user, add them to the leaderboard
-    if (currentUser && currentUser.id !== 1) {
-      // Remove demo user
-      leaderboard.users = leaderboard.users.filter((u) => u.id !== 1)
-
-      // Add current user
-      leaderboard.users.push({
-        id: currentUser.id,
-        username: currentUser.username,
-        coins: currentUser.coinBalance,
-        rank: 0, // Will be calculated below
-      })
-
-      // Sort by coins
-      leaderboard.users.sort((a, b) => b.coins - a.coins)
-
-      // Update ranks
-      leaderboard.users.forEach((user, index) => {
-        user.rank = index + 1
-      })
+    
+    // Update event
+    if (endpoint.match(/\/calendar\/events\/\d+$/) && options.method === "PUT") {
+      const eventId = parseInt(endpoint.split('/').pop() || '0')
+      const eventData = JSON.parse(options.body as string)
+      
+      const eventIndex = MOCK_EVENTS.findIndex(event => event.id === eventId)
+      if (eventIndex !== -1) {
+        MOCK_EVENTS[eventIndex] = { ...MOCK_EVENTS[eventIndex], ...eventData }
+        return MOCK_EVENTS[eventIndex]
+      }
+      
+      throw new Error("Event not found")
     }
-
-    return leaderboard
-  }
-
-  // Forum endpoints
-  if (endpoint.startsWith("/forum")) {
-    if (endpoint.includes("/comments")) {
-      const postId = Number.parseInt(endpoint.split("/")[3])
-
-      if (options.method === "POST") {
-        // Handle comment creation
-        const currentUser = getCurrentUser()
-        if (!currentUser) {
-          throw new Error("User not authenticated")
+    
+    // Delete event
+    if (endpoint.match(/\/calendar\/events\/\d+$/) && options.method === "DELETE") {
+      const eventId = parseInt(endpoint.split('/').pop() || '0')
+      
+      const eventIndex = MOCK_EVENTS.findIndex(event => event.id === eventId)
+      if (eventIndex !== -1) {
+        const deletedEvent = MOCK_EVENTS[eventIndex]
+        MOCK_EVENTS.splice(eventIndex, 1)
+        return { success: true, deletedEvent }
+      }
+      
+      throw new Error("Event not found")
+    }
+    
+    // Create recurring events
+    if (endpoint.includes("/events/recurring") && options.method === "POST") {
+      const { recurrence, ...eventData } = JSON.parse(options.body as string)
+      
+      // Create a series of events based on recurrence pattern
+      const newEvents = []
+      const startDate = new Date(eventData.startTime)
+      const endDate = new Date(eventData.endTime)
+      const duration = endDate.getTime() - startDate.getTime()
+      
+      const maxOccurrences = recurrence.occurrences || 10 // default to 10 if not specified
+      
+      for (let i = 0; i < maxOccurrences; i++) {
+        const newStartDate = new Date(startDate)
+        
+        // Apply recurrence pattern
+        switch (recurrence.frequency) {
+          case 'daily':
+            newStartDate.setDate(startDate.getDate() + (i * recurrence.interval))
+            break
+          case 'weekly':
+            newStartDate.setDate(startDate.getDate() + (i * 7 * recurrence.interval))
+            break
+          case 'monthly':
+            newStartDate.setMonth(startDate.getMonth() + (i * recurrence.interval))
+            break
+          case 'yearly':
+            newStartDate.setFullYear(startDate.getFullYear() + (i * recurrence.interval))
+            break
         }
-
-        const { content } = JSON.parse(options.body as string)
-        const newComment = {
-          id: MOCK_COMMENTS.length + 1,
-          postId,
-          authorId: currentUser.id,
-          authorName: currentUser.username,
-          content,
-          createdAt: new Date().toISOString(),
+        
+        // If end date is set and we've passed it, stop creating events
+        if (recurrence.endDate && new Date(recurrence.endDate) < newStartDate) {
+          break
         }
-
-        MOCK_COMMENTS.push(newComment)
-        return newComment
+        
+        const newEndDate = new Date(newStartDate.getTime() + duration)
+        
+        const newEvent = {
+          id: Date.now() + i,
+          ...eventData,
+          startTime: newStartDate.toISOString(),
+          endTime: newEndDate.toISOString(),
+          isRecurring: true,
+          recurrenceGroupId: Date.now()
+        }
+        
+        MOCK_EVENTS.push(newEvent)
+        newEvents.push(newEvent)
       }
-
-      return MOCK_COMMENTS.filter((comment) => comment.postId === postId)
+      
+      return newEvents
     }
-
-    if (endpoint.match(/\/forum\/posts\/\d+$/)) {
-      const postId = Number.parseInt(endpoint.split("/").pop() || "0")
-      return MOCK_FORUM_POSTS.find((post) => post.id === postId)
-    }
-
-    if (endpoint.includes("/posts") && options.method === "POST") {
-      // Handle post creation
-      const currentUser = getCurrentUser()
-      if (!currentUser) {
-        throw new Error("User not authenticated")
+    
+    // Batch create events
+    if (endpoint.includes("/events/batch") && options.method === "POST") {
+      const { events } = JSON.parse(options.body as string)
+      const createdEvents = []
+      
+      for (const eventData of events) {
+        const newEvent = {
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          ...eventData
+        }
+        
+        MOCK_EVENTS.push(newEvent)
+        createdEvents.push(newEvent)
       }
-
-      const { title, content } = JSON.parse(options.body as string)
-      const newPost = {
-        id: MOCK_FORUM_POSTS.length + 1,
-        authorId: currentUser.id,
-        authorName: currentUser.username,
-        title,
-        content,
-        createdAt: new Date().toISOString(),
-      }
-
-      MOCK_FORUM_POSTS.push(newPost)
-      return newPost
+      
+      return createdEvents
     }
-
-    return MOCK_FORUM_POSTS
-  }
-
-  // Visualizations endpoints
-  if (endpoint.startsWith("/visualizations")) {
-    return MOCK_VISUALIZATIONS
+    
+    // Get professor events
+    if (endpoint.match(/\/calendar\/professor\/\d+\/events/)) {
+      const professorId = parseInt(endpoint.split('/')[3])
+      // In a real app, we would filter by professor ID
+      // For mock purposes, we'll just return all events
+      return MOCK_EVENTS
+    }
   }
 
   // Default response
   return { success: true }
 }
 
-// Auth API calls
-export const authAPI = {
-  register: async (userData: { username: string; email: string; password: string; role: string }) => {
-    return mockFetchAPI("/auth/register", {
-      method: "POST",
-      body: JSON.stringify(userData),
-    })
-  },
-
-  login: async (credentials: { email: string; password: string }) => {
-    return mockFetchAPI("/auth/login", {
-      method: "POST",
-      body: JSON.stringify(credentials),
-    }) as Promise<AuthResponse>
-  },
-
-  getCurrentUser: async () => {
-    return mockFetchAPI("/users/me") as Promise<User>
-  },
-}
-
-// Calendar API calls
+// Extended Calendar API calls with Google Calendar integration
 export const calendarAPI = {
+  // Basic CRUD operations for calendar events
   getEvents: async (start: string, end: string) => {
     return mockFetchAPI(`/calendar/events?start=${start}&end=${end}`) as Promise<CalendarEvent[]>
   },
@@ -549,106 +327,411 @@ export const calendarAPI = {
     return mockFetchAPI("/calendar/events", {
       method: "POST",
       body: JSON.stringify(eventData),
-    })
-  },
-}
-
-// Problems API calls
-export const problemsAPI = {
-  getProblems: async (filters?: { difficulty?: string; topic?: string; limit?: number }) => {
-    const queryParams = new URLSearchParams()
-    if (filters?.difficulty) queryParams.append("difficulty", filters.difficulty)
-    if (filters?.topic) queryParams.append("topic", filters.topic)
-    if (filters?.limit) queryParams.append("limit", filters.limit.toString())
-
-    return mockFetchAPI(`/problems?${queryParams.toString()}`) as Promise<Problem[]>
+    }) as Promise<CalendarEvent>
   },
 
-  submitAnswer: async (problemId: number, answer: string) => {
-    return mockFetchAPI(`/problems/${problemId}/submit`, {
+  updateEvent: async (id: number, eventData: Partial<CalendarEvent>) => {
+    return mockFetchAPI(`/calendar/events/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(eventData),
+    }) as Promise<CalendarEvent>
+  },
+
+  deleteEvent: async (id: number) => {
+    return mockFetchAPI(`/calendar/events/${id}`, {
+      method: "DELETE",
+    }) as Promise<{ success: boolean, deletedEvent: CalendarEvent }>
+  },
+  
+  // Enhanced functionality for professors
+  getProfessorEvents: async (professorId: number, start: string, end: string) => {
+    return mockFetchAPI(`/calendar/professor/${professorId}/events?start=${start}&end=${end}`) as Promise<CalendarEvent[]>
+  },
+  
+  createRecurringEvent: async (eventData: Omit<CalendarEvent, "id"> & { 
+    recurrence: {
+      frequency: 'daily' | 'weekly' | 'monthly' | 'yearly',
+      interval: number,
+      endDate?: string,
+      occurrences?: number
+    } 
+  }) => {
+    return mockFetchAPI("/calendar/events/recurring", {
       method: "POST",
-      body: JSON.stringify({ answer }),
-    })
+      body: JSON.stringify(eventData),
+    }) as Promise<CalendarEvent[]>
   },
-
-  getHistory: async () => {
-    return mockFetchAPI("/problems/history")
-  },
-
-  createProblem: async (problemData: Omit<Problem, "id"> & { correctAnswer: string }) => {
-    return mockFetchAPI("/problems", {
+  
+  batchCreateEvents: async (events: Array<Omit<CalendarEvent, "id">>) => {
+    return mockFetchAPI("/calendar/events/batch", {
       method: "POST",
-      body: JSON.stringify(problemData),
-    })
+      body: JSON.stringify({ events }),
+    }) as Promise<CalendarEvent[]>
   },
-
-  getAttempts: (problemId: number): ProblemAttempt[] => {
-    const attempts = getProblemAttempts()
-    return attempts[problemId] || []
-  },
+  
+  // Google Calendar integration
+  googleCalendar: {
+    // Initialize Google API
+    init: async () => {
+      return googleCalendarHelpers.loadGoogleApi()
+    },
+    
+    // Sign in to Google
+    signIn: async () => {
+      return googleCalendarHelpers.signInToGoogle()
+    },
+    
+    // Check if signed in
+    isSignedIn: () => {
+      return googleCalendarHelpers.isSignedInToGoogle()
+    },
+    
+    // Sign out from Google
+    signOut: async () => {
+      return googleCalendarHelpers.signOutFromGoogle()
+    },
+    
+    // List user's calendars
+    listCalendars: async () => {
+      if (!googleCalendarHelpers.isSignedInToGoogle()) {
+        throw new Error("User not signed in to Google")
+      }
+      
+      try {
+        const response = await gapi.client.calendar.calendarList.list()
+        return response.result.items || []
+      } catch (error) {
+        console.error('Error listing Google calendars:', error)
+        throw error
+      }
+    },
+    
+    // Get events from Google Calendar
+    getGoogleEvents: async (calendarId = 'primary', timeMin?: string, timeMax?: string) => {
+      if (!googleCalendarHelpers.isSignedInToGoogle()) {
+        throw new Error("User not signed in to Google")
+      }
+      
+      try {
+        const now = new Date()
+        const oneMonthFromNow = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate())
+        
+        const response = await gapi.client.calendar.events.list({
+          calendarId,
+          timeMin: timeMin || now.toISOString(),
+          timeMax: timeMax || oneMonthFromNow.toISOString(),
+          singleEvents: true,
+          orderBy: 'startTime'
+        })
+        
+        // Convert Google events to our format
+        return (response.result.items || []).map(googleCalendarHelpers.fromGoogleCalendarEvent)
+      } catch (error) {
+        console.error('Error getting Google calendar events:', error)
+        throw error
+      }
+    },
+    
+    // Create event in Google Calendar
+    createGoogleEvent: async (calendarId = 'primary', event: CalendarEvent) => {
+      if (!googleCalendarHelpers.isSignedInToGoogle()) {
+        throw new Error("User not signed in to Google")
+      }
+      
+      try {
+        const googleEvent = googleCalendarHelpers.toGoogleCalendarEvent(event)
+        const response = await gapi.client.calendar.events.insert({
+          calendarId,
+          resource: googleEvent
+        })
+        
+        // Return the created event converted to our format
+        return googleCalendarHelpers.fromGoogleCalendarEvent(response.result)
+      } catch (error) {
+        console.error('Error creating Google calendar event:', error)
+        throw error
+      }
+    },
+    
+    // Create event in both our system and Google Calendar
+    createSyncedEvent: async (eventData: Omit<CalendarEvent, "id">, googleCalendarId = 'primary') => {
+      try {
+        // First create in our system
+        const createdEvent = await calendarAPI.createEvent(eventData) as CalendarEvent
+        
+        // Then create in Google Calendar if user is signed in
+        if (googleCalendarHelpers.isSignedInToGoogle()) {
+          const googleEvent = await calendarAPI.googleCalendar.createGoogleEvent(googleCalendarId, createdEvent)
+          
+          // Update our event with Google Calendar ID
+          if (googleEvent.googleEventId) {
+            await calendarAPI.updateEvent(createdEvent.id as number, { 
+              googleEventId: googleEvent.googleEventId,
+              googleCalendarId 
+            })
+            
+            return { ...createdEvent, googleEventId: googleEvent.googleEventId, googleCalendarId }
+          }
+        }
+        
+        return createdEvent
+      } catch (error) {
+        console.error('Error creating synced event:', error)
+        throw error
+      }
+    },
+    
+    // Update event in Google Calendar
+    updateGoogleEvent: async (calendarId: string, eventId: string, eventData: Partial<CalendarEvent>) => {
+      if (!googleCalendarHelpers.isSignedInToGoogle()) {
+        throw new Error("User not signed in to Google")
+      }
+      
+      try {
+        // Get the current event first
+        const getResponse = await gapi.client.calendar.events.get({
+          calendarId,
+          eventId
+        })
+        
+        const currentEvent = getResponse.result
+        const updatedEvent = { ...currentEvent }
+        
+        // Update fields based on eventData
+        if (eventData.title) updatedEvent.summary = eventData.title
+        if (eventData.description) updatedEvent.description = eventData.description
+        if (eventData.startTime) {
+          updatedEvent.start = {
+            dateTime: eventData.startTime,
+            timeZone: currentEvent.start?.timeZone
+          }
+        }
+        if (eventData.endTime) {
+          updatedEvent.end = {
+            dateTime: eventData.endTime,
+            timeZone: currentEvent.end?.timeZone
+          }
+        }
+        if (eventData.location) updatedEvent.location = eventData.location
+        
+        // Update event type in extended properties
+        if (eventData.eventType && updatedEvent.extendedProperties) {
+          if (!updatedEvent.extendedProperties.private) {
+            updatedEvent.extendedProperties.private = {}
+          }
+          updatedEvent.extendedProperties.private.eventType = eventData.eventType
+        }
+        
+        const response = await gapi.client.calendar.events.update({
+          calendarId,
+          eventId,
+          resource: updatedEvent
+        })
+        
+        return googleCalendarHelpers.fromGoogleCalendarEvent(response.result)
+      } catch (error) {
+        console.error('Error updating Google calendar event:', error)
+        throw error
+      }
+    },
+    
+    // Delete event from Google Calendar
+    deleteGoogleEvent: async (calendarId: string, eventId: string) => {
+      if (!googleCalendarHelpers.isSignedInToGoogle()) {
+        throw new Error("User not signed in to Google")
+      }
+      
+      try {
+        await gapi.client.calendar.events.delete({
+          calendarId,
+          eventId
+        })
+        
+        return { success: true }
+      } catch (error) {
+        console.error('Error deleting Google calendar event:', error)
+        throw error
+      }
+    },
+    
+    // Import events from Google Calendar to our system
+    importFromGoogle: async (calendarId = 'primary', timeMin?: string, timeMax?: string) => {
+      try {
+        // Get events from Google Calendar
+        const googleEvents = await calendarAPI.googleCalendar.getGoogleEvents(calendarId, timeMin, timeMax)
+        
+        // Filter out events that already exist in our system (by googleEventId)
+        const newEvents = googleEvents.filter(event => !!event.googleEventId && !MOCK_EVENTS.some(
+          e => e.googleEventId === event.googleEventId
+        ))
+        
+        // Create events in our system
+        if (newEvents.length > 0) {
+          await calendarAPI.batchCreateEvents(newEvents)
+        }
+        
+        return newEvents
+      } catch (error) {
+        console.error('Error importing events from Google:', error)
+        throw error
+      }
+    },
+    
+    // Export events from our system to Google Calendar
+    exportToGoogle: async (calendarId = 'primary', events?: CalendarEvent[]) => {
+      try {
+        if (!googleCalendarHelpers.isSignedInToGoogle()) {
+          throw new Error("User not signed in to Google")
+        }
+        
+        // Use provided events or get all events from our system
+        const eventsToExport = events || await calendarAPI.getEvents(
+          new Date().toISOString(),
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        )
+        
+        // Filter out events that already exist in Google Calendar
+        const newEvents = eventsToExport.filter(event => !event.googleEventId)
+        
+        // Create events in Google Calendar
+        const createdEvents = []
+        
+        for (const event of newEvents) {
+          const googleEvent = await calendarAPI.googleCalendar.createGoogleEvent(calendarId, event)
+          
+          // Update our event with Google Calendar ID
+          if (googleEvent.googleEventId && event.id) {
+            await calendarAPI.updateEvent(event.id, { 
+              googleEventId: googleEvent.googleEventId,
+              googleCalendarId: calendarId 
+            })
+          }
+          
+          createdEvents.push(googleEvent)
+        }
+        
+        return createdEvents
+      } catch (error) {
+        console.error('Error exporting events to Google:', error)
+        throw error
+      }
+    }
+  }
 }
 
-// Leaderboard API calls
-export const leaderboardAPI = {
-  getLeaderboard: async (limit = 10) => {
-    return mockFetchAPI(`/leaderboard?limit=${limit}`) as Promise<LeaderboardResponse>
-  },
+// Type declaration for the Google API
+declare global {
+  interface Window {
+    gapi: {
+      load: (api: string, callback: () => void) => void
+      client: {
+        init: (params: {
+          apiKey: string
+          clientId: string
+          discoveryDocs: string[]
+          scope: string
+        }) => Promise<void>
+        calendar: {
+          calendarList: {
+            list: () => Promise<{
+              result: {
+                items?: Array<{
+                  id: string
+                  summary: string
+                  primary?: boolean
+                }>
+              }
+            }>
+          }
+          events: {
+            list: (params: {
+              calendarId: string
+              timeMin: string
+              timeMax: string
+              singleEvents: boolean
+              orderBy: string
+            }) => Promise<{
+              result: {
+                items?: gapi.client.calendar.Event[]
+              }
+            }>
+            get: (params: {
+              calendarId: string
+              eventId: string
+            }) => Promise<{
+              result: gapi.client.calendar.Event
+            }>
+            insert: (params: {
+              calendarId: string
+              resource: gapi.client.calendar.Event
+            }) => Promise<{
+              result: gapi.client.calendar.Event
+            }>
+            update: (params: {
+              calendarId: string
+              eventId: string
+              resource: gapi.client.calendar.Event
+            }) => Promise<{
+              result: gapi.client.calendar.Event
+            }>
+            delete: (params: {
+              calendarId: string
+              eventId: string
+            }) => Promise<void>
+          }
+        }
+      }
+      auth2: {
+        getAuthInstance: () => {
+          isSignedIn: {
+            get: () => boolean
+          }
+          signIn: () => Promise<gapi.auth2.GoogleUser>
+          signOut: () => Promise<void>
+        }
+      }
+    }
+  }
 }
 
-// Visualizations API calls
-export const visualizationsAPI = {
-  getVisualizations: async (topic?: string) => {
-    const queryParams = new URLSearchParams()
-    if (topic) queryParams.append("topic", topic)
-
-    return mockFetchAPI(`/visualizations?${queryParams.toString()}`) as Promise<any[]>
-  },
+namespace gapi.client.calendar {
+  export interface Event {
+    id?: string
+    summary?: string
+    description?: string
+    location?: string
+    start?: {
+      dateTime: string
+      timeZone?: string
+    }
+    end?: {
+      dateTime: string
+      timeZone?: string
+    }
+    colorId?: string
+    organizer?: {
+      email?: string
+      displayName?: string
+    }
+    extendedProperties?: {
+      private?: {
+        [key: string]: string
+      }
+    }
+  }
 }
 
-// Forum API calls
-export const forumAPI = {
-  getPosts: async (limit = 20) => {
-    return mockFetchAPI(`/forum/posts?limit=${limit}`) as Promise<ForumPost[]>
-  },
-
-  createPost: async (postData: { title: string; content: string }) => {
-    return mockFetchAPI("/forum/posts", {
-      method: "POST",
-      body: JSON.stringify(postData),
-    })
-  },
-
-  getPost: async (postId: number) => {
-    return mockFetchAPI(`/forum/posts/${postId}`) as Promise<ForumPost>
-  },
-
-  getComments: async (postId: number) => {
-    return mockFetchAPI(`/forum/posts/${postId}/comments`) as Promise<Comment[]>
-  },
-
-  createComment: async (postId: number, content: string) => {
-    return mockFetchAPI(`/forum/posts/${postId}/comments`, {
-      method: "POST",
-      body: JSON.stringify({ content }),
-    })
-  },
+namespace gapi.auth2 {
+  export interface GoogleUser {
+    getAuthResponse: () => {
+      id_token: string
+      access_token: string
+      expires_at: number
+    }
+    getBasicProfile: () => {
+      getId: () => string
+      getName: () => string
+      getEmail: () => string
+    }
+  }
 }
-
-export interface ForumPost {
-  id: number
-  authorId: number
-  authorName: string
-  title: string
-  content: string
-  createdAt: string
-}
-
-export interface Comment {
-  id: number
-  postId: number
-  authorId: number
-  authorName: string
-  content: string
-  createdAt: string
-}
-
