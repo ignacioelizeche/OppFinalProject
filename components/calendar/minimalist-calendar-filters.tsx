@@ -32,10 +32,11 @@ export function MinimalistCalendarFilters({
   const [isOpen, setIsOpen] = useState(false)
 
   const eventTypes = [
-    { value: "work", label: "Work" },
-    { value: "meeting", label: "Meeting" },
-    { value: "appointment", label: "Appointment" },
-    { value: "class", label: "Class" },
+    { value: "lecture", label: "Lecture" },
+    { value: "assignment", label: "Assignment" },
+    { value: "exam", label: "Exam" },
+    { value: "review", label: "Review" },
+    { value: "study-group", label: "Study Group" },
   ]
 
   const priorities = [

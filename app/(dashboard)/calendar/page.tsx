@@ -7,12 +7,13 @@ import { EventForm } from "@/components/calendar/event-form"
 import { MobileEventForm } from "@/components/calendar/mobile-event-form"
 import { MinimalistCalendarFilters } from "@/components/calendar/minimalist-calendar-filters"
 import { calendarAPI } from "@/lib/realApi"
-import type { CalendarEvent, CalendarFilter } from "@/lib/types"
+import type { CalendarEvent } from "@/lib/types"
 import { Plus, CalendarIcon } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function CalendarPage() {
   // State management
@@ -23,18 +24,14 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true)
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([])
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([])
-  const [filters, setFilters] = useState<CalendarFilter>({
-    eventTypes: [],
-    priorities: [],
-    tags: [],
-    instructors: [],
-  })
 
   // Hooks
   const isMobile = useIsMobile()
   const { toast } = useToast()
+  const { user } = useAuth()
+  const isTeacher = user?.role === "teacher" || user?.role === "admin"
 
-  // Load events with date range and filters
+  // Load all events without filters
   const loadEvents = useCallback(async () => {
     try {
       setLoading(true)
@@ -42,7 +39,8 @@ export default function CalendarPage() {
       const threeMonthsLater = new Date()
       threeMonthsLater.setMonth(now.getMonth() + 3)
 
-      const fetchedEvents = await calendarAPI.getEvents(now.toISOString(), threeMonthsLater.toISOString(), filters)
+      // Load all events without filters - let frontend handle filtering
+      const fetchedEvents = await calendarAPI.getEvents(now.toISOString(), threeMonthsLater.toISOString())
       setEvents(fetchedEvents)
     } catch (error) {
       console.error("Failed to load events:", error)
@@ -54,7 +52,30 @@ export default function CalendarPage() {
     } finally {
       setLoading(false)
     }
-  }, [filters, toast])
+  }, [toast]) // Remove filters dependency
+
+  // Filter events locally
+  const filterEvents = useCallback(
+    (events: CalendarEvent[]) => {
+      return events.filter((event) => {
+        // Filter by event types
+        if (selectedEventTypes.length > 0 && !selectedEventTypes.includes(event.eventType)) {
+          return false
+        }
+
+        // Filter by priorities
+        if (selectedPriorities.length > 0 && !selectedPriorities.includes(event.priority)) {
+          return false
+        }
+
+        return true
+      })
+    },
+    [selectedEventTypes, selectedPriorities],
+  )
+
+  // Get filtered events
+  const filteredEvents = filterEvents(events)
 
   // Initial data loading
   useEffect(() => {
@@ -68,12 +89,28 @@ export default function CalendarPage() {
   }
 
   const handleEditEvent = (event: CalendarEvent) => {
+    if (!isTeacher) {
+      toast({
+        title: "Access Denied",
+        description: "Only teachers can edit events",
+        variant: "destructive",
+      })
+      return
+    }
     setEditingEvent(event)
     setShowEventForm(true)
     setSelectedEvent(null)
   }
 
   const handleDeleteEvent = async (eventId: number) => {
+    if (!isTeacher) {
+      toast({
+        title: "Access Denied",
+        description: "Only teachers can delete events",
+        variant: "destructive",
+      })
+      return
+    }
     try {
       await calendarAPI.deleteEvent(eventId)
       setEvents(events.filter((e) => e.id !== eventId))
@@ -109,17 +146,12 @@ export default function CalendarPage() {
         const completeEventData = {
           title: eventData.title || "New Event",
           description: eventData.description || "",
-          eventType: eventData.eventType || "work",
+          eventType: eventData.eventType || "personal",
           startTime: eventData.startTime || new Date().toISOString(),
           endTime: eventData.endTime || new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-          isAllDay: eventData.isAllDay || false,
-          isRecurring: eventData.isRecurring || false,
-          recurrencePattern: eventData.recurrencePattern,
-          recurrenceEnd: eventData.recurrenceEnd,
           attendees: eventData.attendees || [],
           priority: eventData.priority || "medium",
           color: eventData.color || "var(--accent-blue)",
-          tags: eventData.tags || [],
           googleCalendarId: eventData.googleCalendarId,
           createdBy: 1, // Default user ID
           createdAt: new Date().toISOString(),
@@ -151,29 +183,29 @@ export default function CalendarPage() {
     setSelectedEvent(event)
   }
 
-  // Filter handlers
+  // Update filter handlers - remove setFilters calls
   const handleEventTypesChange = (types: string[]) => {
     setSelectedEventTypes(types)
-    setFilters((prev) => ({ ...prev, eventTypes: types }))
   }
 
   const handlePrioritiesChange = (priorities: string[]) => {
     setSelectedPriorities(priorities)
-    setFilters((prev) => ({ ...prev, priorities }))
   }
 
   const handleClearFilters = () => {
     setSelectedEventTypes([])
     setSelectedPriorities([])
-    setFilters({
-      eventTypes: [],
-      priorities: [],
-      tags: [],
-      instructors: [],
-    })
   }
 
   const handleDateClick = (date: Date) => {
+    if (!isTeacher) {
+      toast({
+        title: "Access Denied",
+        description: "Only teachers can create events",
+        variant: "destructive",
+      })
+      return
+    }
     // Create a new event on the selected date
     const startTime = new Date(date)
     startTime.setHours(9, 0, 0, 0) // Default to 9 AM
@@ -203,10 +235,14 @@ export default function CalendarPage() {
             <p className="text-gray-400">Manage your schedule, assignments, and important dates</p>
           </div>
         </div>
-        <button className="button-primary flex items-center" onClick={handleCreateEvent}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Event
-        </button>
+        {isTeacher ? (
+          <button className="button-primary flex items-center" onClick={handleCreateEvent}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Event
+          </button>
+        ) : (
+          <div className="text-sm text-gray-400">Only teachers can create events</div>
+        )}
       </div>
 
       {/* Filters with custom styling */}
@@ -233,7 +269,7 @@ export default function CalendarPage() {
             </div>
           </div>
         ) : (
-          <CalendarView events={events} onEventClick={handleEventClick} onDateClick={handleDateClick} />
+          <CalendarView events={filteredEvents} onEventClick={handleEventClick} onDateClick={handleDateClick} />
         )}
       </div>
 
@@ -249,6 +285,7 @@ export default function CalendarPage() {
               onEdit={handleEditEvent}
               onDelete={handleDeleteEvent}
               onClose={() => setSelectedEvent(null)}
+              canEdit={isTeacher}
             />
           )}
         </DialogContent>

@@ -16,7 +16,6 @@ export interface User {
   weeklyPoints?: number
   monthlyPoints?: number
   problemsSolved?: number
-  achievements?: string[]
   lastActive?: string
 }
 
@@ -45,7 +44,6 @@ export interface DashboardStats {
     dates: string[]
     activities: number[]
   }
-  recentAchievements: Achievement[]
 }
 
 export interface Goal {
@@ -55,18 +53,8 @@ export interface Goal {
   targetValue: number
   currentValue: number
   deadline: string
-  type: 'daily' | 'weekly' | 'monthly' | 'custom'
-  status: 'active' | 'completed' | 'failed'
-  xpReward: number
-  coinReward: number
-}
-
-export interface Achievement {
-  id: number
-  title: string
-  description: string
-  icon: string
-  unlockedAt: string
+  type: "daily" | "weekly" | "monthly" | "custom"
+  status: "active" | "completed" | "failed"
   xpReward: number
   coinReward: number
 }
@@ -76,21 +64,17 @@ export interface CalendarEvent {
   id: number
   title: string
   description: string
-  eventType: 'lecture' | 'assignment' | 'exam' | 'lab' | 'office-hours' | 'review' | 'project' | 'personal'
+  eventType:
+    | "lecture"
+    | "assignment"
+    | "exam"
+    | "review"
+    | "study-group"
   startTime: string
   endTime: string
-  location?: string
-  instructor?: string
-  isAllDay: boolean
-  isRecurring: boolean
-  recurrencePattern?: 'daily' | 'weekly' | 'monthly'
-  recurrenceEnd?: string
   attendees?: string[]
-  priority: 'low' | 'medium' | 'high' | 'urgent'
+  priority: "low" | "medium" | "high" | "urgent"
   color?: string
-  notificationEnabled: boolean
-  notificationMinutes: number[]
-  tags: string[]
   googleCalendarId?: string
   createdBy: number
   createdAt: string
@@ -98,7 +82,7 @@ export interface CalendarEvent {
 }
 
 export interface CalendarView {
-  type: 'month' | 'week' | 'day' | 'agenda'
+  type: "month" | "week" | "day" | "agenda"
   startDate: Date
   endDate: Date
 }
@@ -106,8 +90,6 @@ export interface CalendarView {
 export interface CalendarFilter {
   eventTypes: string[]
   priorities: string[]
-  tags: string[]
-  instructors: string[]
 }
 
 // Problem types
@@ -115,7 +97,7 @@ export interface Problem {
   id: number
   title: string
   description: string
-  difficulty: 'easy' | 'medium' | 'hard'
+  difficulty: "easy" | "medium" | "hard"
   topic: string
   pointValue: number
   xpValue?: number
@@ -123,7 +105,7 @@ export interface Problem {
   tags?: string[]
   concepts?: string[]
   prerequisites?: number[]
-  type?: 'multiple-choice' | 'short-answer' | 'essay'
+  type?: "multiple-choice" | "short-answer" | "essay"
   correctAnswer?: string
   choices?: string[]
   explanation?: string
@@ -160,7 +142,6 @@ export interface SubmitAnswerResponse {
   coinsEarned?: number
   pointsEarned?: number
   newLevel?: number
-  achievements?: Achievement[]
   explanation?: string
   nextSuggestedProblem?: number
 }
@@ -181,7 +162,6 @@ export interface LeaderboardEntry {
   problemsSolved: number
   forumContributions: number
   streak: number
-  achievements: string[]
   joinDate: string
   lastActive: string
   isCurrentUser?: boolean
@@ -237,7 +217,7 @@ export interface ForumPost {
   views: number
   votesUp: number
   votesDown: number
-  userVote?: 'up' | 'down' | null
+  userVote?: "up" | "down" | null
   commentCount: number
   isSticky: boolean
   isLocked: boolean
@@ -257,7 +237,7 @@ export interface Comment {
   content: string
   votesUp: number
   votesDown: number
-  userVote?: 'up' | 'down' | null
+  userVote?: "up" | "down" | null
   isAcceptedAnswer: boolean
   parentCommentId?: number
   replies: Comment[]
@@ -277,8 +257,6 @@ export interface ForumStats {
   }[]
 }
 
-
-
 // Mock Exam Center types
 export interface MockExam {
   id: number
@@ -288,8 +266,8 @@ export interface MockExam {
   duration: number // in minutes
   totalQuestions: number
   passingScore: number
-  difficulty: 'easy' | 'medium' | 'hard'
-  type: 'practice' | 'simulation' | 'final'
+  difficulty: "easy" | "medium" | "hard"
+  type: "practice" | "simulation" | "final"
   topics: string[]
   tags: string[]
   prerequisites: string[]
@@ -310,13 +288,13 @@ export interface ExamQuestion {
   id: number
   examId: number
   questionNumber: number
-  type: 'multiple-choice' | 'true-false' | 'short-answer' | 'essay' | 'fill-blank'
+  type: "multiple-choice" | "true-false" | "short-answer" | "essay" | "fill-blank"
   question: string
   options?: string[] // for multiple choice
   correctAnswer: string | string[]
   explanation: string
   points: number
-  difficulty: 'easy' | 'medium' | 'hard'
+  difficulty: "easy" | "medium" | "hard"
   topic: string
   concept: string
   timeLimit?: number // in seconds, optional per-question time limit
@@ -332,7 +310,7 @@ export interface ExamAttempt {
   startTime: string
   endTime?: string
   duration: number // actual time taken in minutes
-  status: 'in-progress' | 'completed' | 'abandoned' | 'paused'
+  status: "in-progress" | "completed" | "abandoned" | "paused"
   score: number
   percentage: number
   totalQuestions: number
@@ -403,8 +381,6 @@ export interface ExamStats {
   }[]
 }
 
-
-
 export interface ExamSession {
   attemptId: number
   currentQuestionIndex: number
@@ -416,8 +392,6 @@ export interface ExamSession {
   answers: Map<number, ExamAnswer>
 }
 
-
-
 // Question Bank types for Mock Exams
 export interface QuestionBank {
   id: number
@@ -426,10 +400,9 @@ export interface QuestionBank {
   subject: string
   totalQuestions: number
   topics: string[]
-  difficulty: 'easy' | 'medium' | 'hard'
+  difficulty: "easy" | "medium" | "hard"
   isPublic: boolean
   createdBy: number
   createdAt: string
   questions: ExamQuestion[]
 }
-
