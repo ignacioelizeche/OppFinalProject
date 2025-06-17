@@ -1,0 +1,21 @@
+
+> delta-educational-platform@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.29
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 3s
+ ○ Compiling / ...
+ ✓ Compiled / in 6.3s (590 modules)
+ HEAD / 200 in 6588ms
+ ✓ Compiled in 599ms (301 modules)
+ GET / 200 in 197ms
+ GET /?id=1215c6e0-a69f-413f-a0af-d21537bc62b1&vscodeBrowserReqId=1749783179095 200 in 226ms
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 1025ms (72 modules)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 2.9s (880 modules)
+ GET /dashboard 200 in 3226ms
