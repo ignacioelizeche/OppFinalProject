@@ -68,8 +68,12 @@ export interface CalendarEvent {
     | "lecture"
     | "assignment"
     | "exam"
+    | "lab"
+    | "office-hours"
     | "review"
+    | "project"
     | "study-group"
+    | "personal"
   startTime: string
   endTime: string
   attendees?: string[]
@@ -257,152 +261,140 @@ export interface ForumStats {
   }[]
 }
 
-// Mock Exam Center types
-export interface MockExam {
+// PDF Document Center types (formerly Mock Exam Center)
+export interface PDFDocument {
   id: number
   title: string
   description: string
   subject: string
-  duration: number // in minutes
-  totalQuestions: number
-  passingScore: number
+  category: "exam" | "assignment" | "lecture-notes" | "study-guide" | "reference" | "practice"
   difficulty: "easy" | "medium" | "hard"
-  type: "practice" | "simulation" | "final"
   topics: string[]
   tags: string[]
   prerequisites: string[]
-  instructions: string
+
+  // PDF file information
+  fileName: string
+  fileSize: number // in bytes
+  pdfContent: string // base64 encoded PDF
+  pageCount: number
+
+  // Metadata
   isPublic: boolean
   isActive: boolean
   createdBy: number
   createdByName: string
   createdAt: string
   updatedAt: string
-  averageScore: number
-  totalAttempts: number
-  averageDuration: number
-  questions: ExamQuestion[]
+
+  // Usage statistics
+  totalDownloads: number
+  totalViews: number
+  averageRating: number
+  ratingCount: number
+
+  // Additional files (answer keys, solutions, etc.)
+  additionalFiles?: PDFAttachment[]
 }
 
-export interface ExamQuestion {
+export interface PDFAttachment {
   id: number
-  examId: number
-  questionNumber: number
-  type: "multiple-choice" | "true-false" | "short-answer" | "essay" | "fill-blank"
-  question: string
-  options?: string[] // for multiple choice
-  correctAnswer: string | string[]
-  explanation: string
-  points: number
-  difficulty: "easy" | "medium" | "hard"
-  topic: string
-  concept: string
-  timeLimit?: number // in seconds, optional per-question time limit
-  imageUrl?: string
-  codeSnippet?: string
-  hints: string[]
+  documentId: number
+  fileName: string
+  fileSize: number
+  pdfContent: string // base64 encoded
+  type: "answer-key" | "solution" | "supplement" | "reference"
+  description: string
+  createdAt: string
 }
 
-export interface ExamAttempt {
+export interface PDFDocumentAttempt {
   id: number
-  examId: number
+  documentId: number
   userId: number
   startTime: string
   endTime?: string
-  duration: number // actual time taken in minutes
-  status: "in-progress" | "completed" | "abandoned" | "paused"
-  score: number
-  percentage: number
-  totalQuestions: number
-  correctAnswers: number
-  isPassing: boolean
-  answers: ExamAnswer[]
-  timeSpentPerQuestion: number[]
-  feedback?: string
+  duration: number // time spent viewing/working in minutes
+  status: "viewing" | "completed" | "downloaded"
+  progress: number // percentage of document viewed/completed
   notes?: string
+  bookmarks: PDFBookmark[]
+  createdAt: string
 }
 
-export interface ExamAnswer {
-  questionId: number
-  selectedAnswer: string | string[]
-  isCorrect: boolean
-  timeSpent: number // in seconds
-  isSkipped: boolean
-  isMarkedForReview: boolean
-  confidence: 1 | 2 | 3 | 4 | 5 // confidence level
+export interface PDFBookmark {
+  id: number
+  attemptId: number
+  pageNumber: number
+  title: string
+  notes?: string
+  createdAt: string
 }
 
-export interface ExamResult {
-  attempt: ExamAttempt
-  exam: MockExam
-  detailedResults: {
-    questionId: number
-    question: string
-    selectedAnswer: string | string[]
-    correctAnswer: string | string[]
-    isCorrect: boolean
-    points: number
-    explanation: string
-    topic: string
-    timeSpent: number
+export interface PDFDocumentResult {
+  attempt: PDFDocumentAttempt
+  document: PDFDocument
+  timeSpent: number
+  pagesViewed: number[]
+  bookmarksCreated: number
+  notesCount: number
+}
+
+export interface PDFDocumentStats {
+  totalDocuments: number
+  totalViews: number
+  totalDownloads: number
+  averageRating: number
+  recentViews: PDFDocumentAttempt[]
+  categoryBreakdown: {
+    category: string
+    documentsCount: number
+    totalViews: number
+    totalDownloads: number
   }[]
-  topicBreakdown: {
-    topic: string
-    totalQuestions: number
-    correctAnswers: number
-    percentage: number
-  }[]
-  recommendations: string[]
-  improvementAreas: string[]
-}
-
-export interface ExamStats {
-  totalExams: number
-  totalAttempts: number
-  averageScore: number
-  bestScore: number
-  recentAttempts: ExamAttempt[]
   subjectBreakdown: {
     subject: string
-    examsCount: number
-    averageScore: number
-    totalAttempts: number
+    documentsCount: number
+    averageRating: number
+    totalViews: number
   }[]
-  difficultyBreakdown: {
-    difficulty: string
-    examsCount: number
-    averageScore: number
-  }[]
-  topicPerformance: {
-    topic: string
-    totalQuestions: number
-    correctAnswers: number
-    accuracy: number
+  topDocuments: {
+    id: number
+    title: string
+    views: number
+    downloads: number
+    rating: number
   }[]
 }
 
-export interface ExamSession {
+export interface PDFDocumentSession {
   attemptId: number
-  currentQuestionIndex: number
-  answeredQuestions: Set<number>
-  markedForReview: Set<number>
-  timeRemaining: number // in seconds
-  isPaused: boolean
+  currentPage: number
+  totalPages: number
+  viewedPages: Set<number>
+  bookmarks: PDFBookmark[]
+  notes: string
   startTime: string
-  answers: Map<number, ExamAnswer>
+  lastActivity: string
 }
 
-// Question Bank types for Mock Exams
-export interface QuestionBank {
+// Question Bank types for PDF Documents (for searchable content)
+export interface DocumentContent {
   id: number
-  title: string
-  description: string
-  subject: string
-  totalQuestions: number
+  documentId: number
+  pageNumber: number
+  textContent: string // extracted text for search
+  keywords: string[]
   topics: string[]
-  difficulty: "easy" | "medium" | "hard"
-  isPublic: boolean
-  createdBy: number
-  createdAt: string
-  questions: ExamQuestion[]
+  difficulty?: "easy" | "medium" | "hard"
 }
+
+// Legacy types for backward compatibility
+export type MockExam = PDFDocument
+export type ExamQuestion = never // No longer used
+export type ExamAttempt = PDFDocumentAttempt
+export type ExamAnswer = never // No longer used
+export type ExamResult = PDFDocumentResult
+export type ExamStats = PDFDocumentStats
+export type ExamSession = PDFDocumentSession
+export type QuestionBank = never // No longer used

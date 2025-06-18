@@ -5,71 +5,107 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { MockExam } from "@/lib/types"
-import { 
-  Clock, 
-  FileText, 
-  Users, 
-  TrendingUp, 
-  Play,
-  Eye,
-  AlertCircle,
-  CheckCircle2,
-  Target
-} from "lucide-react"
+import type { PDFDocument } from "@/lib/types"
+import { FileText, Download, Eye, AlertCircle, CheckCircle2, Target, Star, BookOpen, File } from "lucide-react"
 
 interface ExamGridProps {
-  exams: MockExam[]
+  exams: PDFDocument[]
   loading: boolean
 }
 
 export function ExamGrid({ exams, loading }: ExamGridProps) {
   const router = useRouter()
-  const [startingExam, setStartingExam] = useState<number | null>(null)
+  const [downloadingDoc, setDownloadingDoc] = useState<number | null>(null)
 
-  const handleStartExam = async (examId: number) => {
-    setStartingExam(examId)
+  const handleDownloadPDF = async (document: PDFDocument) => {
+    setDownloadingDoc(document.id)
     try {
-      // Navigate to exam taking page
-      router.push(`/exams/${examId}/take`)
+      // Convert base64 to blob and download
+      const byteCharacters = atob(document.pdfContent)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const byteArray = new Uint8Array(byteNumbers)
+      const blob = new Blob([byteArray], { type: "application/pdf" })
+
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = document.fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
     } catch (error) {
-      console.error("Failed to start exam:", error)
+      console.error("Failed to download PDF:", error)
     } finally {
-      setStartingExam(null)
+      setDownloadingDoc(null)
     }
   }
 
-  const handleViewExam = (examId: number) => {
-    router.push(`/exams/${examId}`)
+  const handleViewDocument = (documentId: number) => {
+    router.push(`/exams/${documentId}`)
   }
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case "easy": return "bg-green-100 text-green-800 border-green-200"
-      case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "hard": return "bg-red-100 text-red-800 border-red-200"
-      default: return "bg-gray-100 text-gray-800 border-gray-200"
+      case "easy":
+        return "bg-green-100 text-green-800 border-green-200"
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "hard":
+        return "bg-red-100 text-red-800 border-red-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
     }
   }
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "practice": return <Target className="h-4 w-4" />
-      case "simulation": return <Play className="h-4 w-4" />
-      case "final": return <CheckCircle2 className="h-4 w-4" />
-      default: return <FileText className="h-4 w-4" />
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case "exam":
+        return <Target className="h-4 w-4" />
+      case "assignment":
+        return <FileText className="h-4 w-4" />
+      case "lecture-notes":
+        return <BookOpen className="h-4 w-4" />
+      case "study-guide":
+        return <CheckCircle2 className="h-4 w-4" />
+      case "reference":
+        return <File className="h-4 w-4" />
+      case "practice":
+        return <Target className="h-4 w-4" />
+      default:
+        return <FileText className="h-4 w-4" />
     }
   }
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "practice": return "bg-blue-100 text-blue-800 border-blue-200"
-      case "simulation": return "bg-purple-100 text-purple-800 border-purple-200"
-      case "final": return "bg-orange-100 text-orange-800 border-orange-200"
-      default: return "bg-gray-100 text-gray-800 border-gray-200"
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case "exam":
+        return "bg-red-100 text-red-800 border-red-200"
+      case "assignment":
+        return "bg-blue-100 text-blue-800 border-blue-200"
+      case "lecture-notes":
+        return "bg-green-100 text-green-800 border-green-200"
+      case "study-guide":
+        return "bg-purple-100 text-purple-800 border-purple-200"
+      case "reference":
+        return "bg-gray-100 text-gray-800 border-gray-200"
+      case "practice":
+        return "bg-orange-100 text-orange-800 border-orange-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
     }
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes"
+    const k = 1024
+    const sizes = ["Bytes", "KB", "MB", "GB"]
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
   }
 
   if (loading) {
@@ -104,10 +140,8 @@ export function ExamGrid({ exams, loading }: ExamGridProps) {
       <Card className="p-12">
         <div className="text-center space-y-4">
           <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
-          <h3 className="text-lg font-semibold">No exams found</h3>
-          <p className="text-muted-foreground">
-            Try adjusting your filters or search criteria to find more exams.
-          </p>
+          <h3 className="text-lg font-semibold">No documents found</h3>
+          <p className="text-muted-foreground">Try adjusting your filters or search criteria to find more documents.</p>
         </div>
       </Card>
     )
@@ -115,124 +149,120 @@ export function ExamGrid({ exams, loading }: ExamGridProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {exams.map((exam) => (
-        <Card key={exam.id} className="hover:shadow-lg transition-shadow duration-200">
+      {exams.map((document) => (
+        <Card key={document.id} className="hover:shadow-lg transition-shadow duration-200">
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <CardTitle className="text-lg line-clamp-2 mb-2">
-                  {exam.title}
-                </CardTitle>
-                <CardDescription className="line-clamp-2">
-                  {exam.description}
-                </CardDescription>
+                <CardTitle className="text-lg line-clamp-2 mb-2">{document.title}</CardTitle>
+                <CardDescription className="line-clamp-2">{document.description}</CardDescription>
               </div>
-              {!exam.isActive && (
-                <AlertCircle className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
-              )}
+              {!document.isActive && <AlertCircle className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />}
             </div>
-            
+
             <div className="flex flex-wrap gap-2 mt-3">
-              <Badge 
-                variant="outline" 
-                className={`${getDifficultyColor(exam.difficulty)} capitalize`}
-              >
-                {exam.difficulty}
+              <Badge variant="outline" className={`${getDifficultyColor(document.difficulty)} capitalize`}>
+                {document.difficulty}
               </Badge>
-              <Badge 
-                variant="outline" 
-                className={`${getTypeColor(exam.type)} capitalize flex items-center gap-1`}
+              <Badge
+                variant="outline"
+                className={`${getCategoryColor(document.category)} capitalize flex items-center gap-1`}
               >
-                {getTypeIcon(exam.type)}
-                {exam.type}
+                {getCategoryIcon(document.category)}
+                {document.category.replace("-", " ")}
               </Badge>
             </div>
           </CardHeader>
-          
+
           <CardContent className="space-y-4">
             {/* Subject and Topics */}
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">
-                {exam.subject}
-              </p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">{document.subject}</p>
               <div className="flex flex-wrap gap-1">
-                {exam.topics.slice(0, 3).map((topic) => (
+                {document.topics.slice(0, 3).map((topic) => (
                   <Badge key={topic} variant="secondary" className="text-xs">
                     {topic}
                   </Badge>
                 ))}
-                {exam.topics.length > 3 && (
+                {document.topics.length > 3 && (
                   <Badge variant="secondary" className="text-xs">
-                    +{exam.topics.length - 3}
+                    +{document.topics.length - 3}
                   </Badge>
                 )}
               </div>
             </div>
 
-            {/* Exam Details */}
+            {/* Document Details */}
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>{exam.duration} min</span>
-              </div>
-              <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
-                <span>{exam.totalQuestions} questions</span>
+                <span>{document.pageCount} pages</span>
               </div>
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span>{exam.totalAttempts} attempts</span>
+                <File className="h-4 w-4 text-muted-foreground" />
+                <span>{formatFileSize(document.fileSize)}</span>
               </div>
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                <span>{exam.averageScore.toFixed(1)}% avg</span>
+                <Eye className="h-4 w-4 text-muted-foreground" />
+                <span>{document.totalViews} views</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Download className="h-4 w-4 text-muted-foreground" />
+                <span>{document.totalDownloads} downloads</span>
               </div>
             </div>
 
-            {/* Passing Score */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Passing Score</span>
-                <span>{exam.passingScore}%</span>
+            {/* Rating */}
+            {document.ratingCount > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  <span className="text-sm font-medium">{document.averageRating.toFixed(1)}</span>
+                </div>
+                <span className="text-xs text-muted-foreground">({document.ratingCount} ratings)</span>
               </div>
-              <Progress value={exam.passingScore} className="h-2" />
-            </div>
+            )}
 
             {/* Prerequisites */}
-            {exam.prerequisites.length > 0 && (
+            {document.prerequisites.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">
-                  Prerequisites:
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {exam.prerequisites.join(", ")}
-                </p>
+                <p className="text-xs font-medium text-muted-foreground mb-1">Prerequisites:</p>
+                <p className="text-xs text-muted-foreground">{document.prerequisites.join(", ")}</p>
+              </div>
+            )}
+
+            {/* Additional Files */}
+            {document.additionalFiles && document.additionalFiles.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1">Additional Files:</p>
+                <div className="flex flex-wrap gap-1">
+                  {document.additionalFiles.map((file) => (
+                    <Badge key={file.id} variant="outline" className="text-xs">
+                      {file.type.replace("-", " ")}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
 
             {/* Action Buttons */}
             <div className="flex gap-2 pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleViewExam(exam.id)}
-                className="flex-1"
-              >
+              <Button variant="outline" size="sm" onClick={() => handleViewDocument(document.id)} className="flex-1">
                 <Eye className="h-4 w-4 mr-1" />
                 View
               </Button>
               <Button
                 size="sm"
-                onClick={() => handleStartExam(exam.id)}
-                disabled={!exam.isActive || startingExam === exam.id}
+                onClick={() => handleDownloadPDF(document)}
+                disabled={!document.isActive || downloadingDoc === document.id}
                 className="flex-1"
               >
-                {startingExam === exam.id ? (
-                  "Starting..."
+                {downloadingDoc === document.id ? (
+                  "Downloading..."
                 ) : (
                   <>
-                    <Play className="h-4 w-4 mr-1" />
-                    Start
+                    <Download className="h-4 w-4 mr-1" />
+                    Download
                   </>
                 )}
               </Button>
@@ -241,8 +271,8 @@ export function ExamGrid({ exams, loading }: ExamGridProps) {
             {/* Creator and Date */}
             <div className="text-xs text-muted-foreground border-t pt-3">
               <div className="flex justify-between">
-                <span>By {exam.createdByName}</span>
-                <span>{new Date(exam.createdAt).toLocaleDateString()}</span>
+                <span>By {document.createdByName}</span>
+                <span>{new Date(document.createdAt).toLocaleDateString()}</span>
               </div>
             </div>
           </CardContent>
