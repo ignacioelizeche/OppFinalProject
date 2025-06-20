@@ -1,1 +1,5 @@
-{}
+{
+  "/(dashboard)/exams/[id]/view/page": "app/(dashboard)/exams/[id]/view/page.js",
+  "/(dashboard)/exams/page": "app/(dashboard)/exams/page.js",
+  "/(dashboard)/problems/page": "app/(dashboard)/problems/page.js"
+}

@@ -46,7 +46,7 @@ export function ExamGrid({ exams, loading }: ExamGridProps) {
   }
 
   const handleViewDocument = (documentId: number) => {
-    router.push(`/exams/${documentId}`)
+    router.push(`/exams/${documentId}/view`)
   }
 
   const getDifficultyColor = (difficulty: string) => {

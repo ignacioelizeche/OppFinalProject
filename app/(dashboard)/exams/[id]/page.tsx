@@ -9,25 +9,25 @@ import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { mockExamAPI } from "@/lib/realApi"
 import type { MockExam, ExamResult } from "@/lib/types"
-import { 
-  Clock, 
-  FileText, 
-  Users, 
-  TrendingUp, 
+import {
+  Clock,
+  FileText,
+  Users,
+  TrendingUp,
   Play,
   ArrowLeft,
   AlertCircle,
   CheckCircle2,
   Target,
   Trophy,
-  Calendar
+  Calendar,
 } from "lucide-react"
 
 export default function ExamDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const examId = parseInt(params.id as string)
-  
+  const examId = Number.parseInt(params.id as string)
+
   const [exam, setExam] = useState<MockExam | null>(null)
   const [attempts, setAttempts] = useState<ExamResult[]>([])
   const [loading, setLoading] = useState(true)
@@ -47,7 +47,7 @@ export default function ExamDetailPage() {
   const loadAttempts = useCallback(async () => {
     try {
       const allAttempts = await mockExamAPI.getAttempts()
-      const examAttempts = allAttempts.filter(attempt => attempt.exam.id === examId)
+      const examAttempts = allAttempts.filter((attempt) => attempt.exam.id === examId)
       setAttempts(examAttempts)
     } catch (error) {
       console.error("Failed to load exam attempts:", error)
@@ -72,28 +72,40 @@ export default function ExamDetailPage() {
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case "easy": return "bg-green-100 text-green-800 border-green-200"
-      case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "hard": return "bg-red-100 text-red-800 border-red-200"
-      default: return "bg-gray-100 text-gray-800 border-gray-200"
+      case "easy":
+        return "bg-green-100 text-green-800 border-green-200"
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "hard":
+        return "bg-red-100 text-red-800 border-red-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
     }
   }
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case "practice": return <Target className="h-4 w-4" />
-      case "simulation": return <Play className="h-4 w-4" />
-      case "final": return <CheckCircle2 className="h-4 w-4" />
-      default: return <FileText className="h-4 w-4" />
+      case "practice":
+        return <Target className="h-4 w-4" />
+      case "simulation":
+        return <Play className="h-4 w-4" />
+      case "final":
+        return <CheckCircle2 className="h-4 w-4" />
+      default:
+        return <FileText className="h-4 w-4" />
     }
   }
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case "practice": return "bg-blue-100 text-blue-800 border-blue-200"
-      case "simulation": return "bg-purple-100 text-purple-800 border-purple-200"
-      case "final": return "bg-orange-100 text-orange-800 border-orange-200"
-      default: return "bg-gray-100 text-gray-800 border-gray-200"
+      case "practice":
+        return "bg-blue-100 text-blue-800 border-blue-200"
+      case "simulation":
+        return "bg-purple-100 text-purple-800 border-purple-200"
+      case "final":
+        return "bg-orange-100 text-orange-800 border-orange-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
     }
   }
 
@@ -129,8 +141,9 @@ export default function ExamDetailPage() {
     )
   }
 
-  const bestAttempt = attempts.reduce((best, current) => 
-    !best || current.attempt.score > best.attempt.score ? current : best, null as ExamResult | null
+  const bestAttempt = attempts.reduce(
+    (best, current) => (!best || current.attempt.score > best.attempt.score ? current : best),
+    null as ExamResult | null,
   )
 
   return (
@@ -149,33 +162,19 @@ export default function ExamDetailPage() {
           <div className="flex justify-between items-start">
             <div className="space-y-2">
               <CardTitle className="text-2xl">{exam.title}</CardTitle>
-              <CardDescription className="text-base">
-                {exam.description}
-              </CardDescription>
+              <CardDescription className="text-base">{exam.description}</CardDescription>
               <div className="flex flex-wrap gap-2">
-                <Badge 
-                  variant="outline" 
-                  className={`${getDifficultyColor(exam.difficulty)} capitalize`}
-                >
+                <Badge variant="outline" className={`${getDifficultyColor(exam.difficulty)} capitalize`}>
                   {exam.difficulty}
                 </Badge>
-                <Badge 
-                  variant="outline" 
-                  className={`${getTypeColor(exam.type)} capitalize flex items-center gap-1`}
-                >
+                <Badge variant="outline" className={`${getTypeColor(exam.type)} capitalize flex items-center gap-1`}>
                   {getTypeIcon(exam.type)}
                   {exam.type}
                 </Badge>
-                {!exam.isActive && (
-                  <Badge variant="destructive">Inactive</Badge>
-                )}
+                {!exam.isActive && <Badge variant="destructive">Inactive</Badge>}
               </div>
             </div>
-            <Button 
-              size="lg"
-              onClick={handleStartExam}
-              disabled={!exam.isActive || startingExam}
-            >
+            <Button size="lg" onClick={handleStartExam} disabled={!exam.isActive || startingExam}>
               {startingExam ? (
                 "Starting..."
               ) : (
@@ -187,7 +186,7 @@ export default function ExamDetailPage() {
             </Button>
           </div>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           {/* Key Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -198,7 +197,7 @@ export default function ExamDetailPage() {
                 <p className="font-medium">{exam.duration} minutes</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <FileText className="h-5 w-5 text-muted-foreground" />
               <div>
@@ -206,7 +205,7 @@ export default function ExamDetailPage() {
                 <p className="font-medium">{exam.totalQuestions}</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <Target className="h-5 w-5 text-muted-foreground" />
               <div>
@@ -214,7 +213,7 @@ export default function ExamDetailPage() {
                 <p className="font-medium">{exam.passingScore}%</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <Users className="h-5 w-5 text-muted-foreground" />
               <div>
@@ -232,7 +231,7 @@ export default function ExamDetailPage() {
               <h4 className="font-medium mb-2">Subject</h4>
               <Badge variant="secondary">{exam.subject}</Badge>
             </div>
-            
+
             <div>
               <h4 className="font-medium mb-2">Topics Covered</h4>
               <div className="flex flex-wrap gap-2">
@@ -299,33 +298,29 @@ export default function ExamDetailPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{exam.averageScore.toFixed(1)}%</div>
-            <Progress value={exam.averageScore} className="mt-2" />
+            <div className="text-2xl font-bold">{exam.averageScore ? exam.averageScore.toFixed(1) : "0.0"}%</div>
+            <Progress value={exam.averageScore || 0} className="mt-2" />
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Attempts</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{exam.totalAttempts}</div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Average duration: {exam.averageDuration} min
-            </p>
+            <div className="text-2xl font-bold">{exam.totalAttempts || 0}</div>
+            <p className="text-xs text-muted-foreground mt-2">Average duration: {exam.averageDuration || 0} min</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Your Best</CardTitle>
             <Trophy className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {bestAttempt ? `${bestAttempt.attempt.score}%` : "No attempts"}
-            </div>
+            <div className="text-2xl font-bold">{bestAttempt ? `${bestAttempt.attempt.score}%` : "No attempts"}</div>
             {bestAttempt && (
               <p className="text-xs text-muted-foreground mt-2">
                 {bestAttempt.attempt.isPassing ? "Passed" : "Not passed"}
@@ -340,21 +335,17 @@ export default function ExamDetailPage() {
         <Card>
           <CardHeader>
             <CardTitle>Your Attempts</CardTitle>
-            <CardDescription>
-              History of your attempts on this exam
-            </CardDescription>
+            <CardDescription>History of your attempts on this exam</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {attempts.map((attempt) => (
                 <div key={attempt.attempt.id} className="flex justify-between items-center p-4 border rounded-lg">
                   <div>
-                    <p className="font-medium">
-                      Attempt #{attempt.attempt.id}
-                    </p>
+                    <p className="font-medium">Attempt #{attempt.attempt.id}</p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(attempt.attempt.startTime).toLocaleDateString()} • 
-                      Duration: {attempt.attempt.duration} minutes
+                      {new Date(attempt.attempt.startTime).toLocaleDateString()} • Duration: {attempt.attempt.duration}{" "}
+                      minutes
                     </p>
                     {attempt.attempt.feedback && (
                       <p className="text-sm text-blue-600 mt-1">{attempt.attempt.feedback}</p>

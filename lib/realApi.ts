@@ -186,7 +186,7 @@ export const problemsAPI = {
     const encodedDiff = encodeURIComponent(difficulty)
     const encodedtopic = encodeURIComponent(topic)
 
-    return await fetchAPI(`/problems/${encodedDiff.toString()}/${encodedtopic.toString()}`) as Problem[]
+    return await fetchAPI(`/problems/difficulty/${encodedDiff.toString()}/${encodedtopic.toString()}`) as Problem[]
   },
 
   getProblem: async (id: number): Promise<Problem> => {
@@ -307,18 +307,18 @@ export const mockExamAPI = {
   },
 
   getExam: async (id: number): Promise<PDFDocument> => {
-    return (await fetchAPI(`/documents/${id}`)) as PDFDocument
+    return (await fetchAPI(`/documents/view/${id}`)) as PDFDocument
   },
 
   getExamById: async (id: number): Promise<PDFDocument> => {
-    return (await fetchAPI(`/documents/${id}`)) as PDFDocument
+    return (await fetchAPI(`/documents/view/${id}`)) as PDFDocument
   },
 
-  uploadDocument: async (documentData: FormData): Promise<PDFDocument> => {
-    // Special handling for file upload
-    const headers: Record<string, string> = {}
+  uploadDocument: async (requestBody: any): Promise<PDFDocument> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    }
 
-    // Add auth token if available
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token")
       if (token) {
@@ -326,10 +326,10 @@ export const mockExamAPI = {
       }
     }
 
-    const response = await fetch(`${API_BASE_URL}/documents/upload`, {
+    const response = await fetch(`${API_BASE_URL}/documents/uploadExams`, {
       method: "POST",
       headers,
-      body: documentData,
+      body: JSON.stringify(requestBody), // Send the wrapped object
     })
 
     if (!response.ok) {

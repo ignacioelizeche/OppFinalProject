@@ -8,6 +8,7 @@ import { mockExamAPI } from "@/lib/realApi"
 import type { PDFDocument, PDFDocumentStats } from "@/lib/types"
 import { ExamGrid } from "@/components/exams/exam-grid"
 import { ExamStatsComponent } from "@/components/exams/exam-stats"
+import { UploadDocumentForm } from "@/components/exams/upload-document-form"
 import { Search, Star, BookOpen, Download, Eye } from "lucide-react"
 
 export default function ExamsPage() {
@@ -43,6 +44,11 @@ export default function ExamsPage() {
     }
   }
 
+  const handleDocumentUploaded = (newDocument: PDFDocument) => {
+    setDocuments((prev) => [newDocument, ...prev])
+    loadStats() // Refresh stats
+  }
+
   const handleSearch = (query: string) => {
     setSearchQuery(query)
   }
@@ -72,11 +78,14 @@ export default function ExamsPage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Document Center</h1>
-          <p className="text-muted-foreground">
-            Access and download PDF documents including exams, assignments, lecture notes, and study materials
-          </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold">Document Center</h1>
+            <p className="text-muted-foreground">
+              Access and download PDF documents including exams, assignments, lecture notes, and study materials
+            </p>
+          </div>
+          <UploadDocumentForm onDocumentUploaded={handleDocumentUploaded} />
         </div>
 
         {/* Search Bar */}
@@ -130,7 +139,7 @@ export default function ExamsPage() {
               <Star className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</div>
+              <div className="text-2xl font-bold">{}</div>
             </CardContent>
           </Card>
         </div>
