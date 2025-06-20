@@ -10,6 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { Search } from "lucide-react"
+import { CreateProblemForm } from "@/components/problems/create-problem-form"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Plus } from "lucide-react"
 
 export default function ProblemsPage() {
   const [problems, setProblems] = useState<Problem[]>([])
@@ -53,11 +63,11 @@ export default function ProblemsPage() {
       )
     }
 
-    if (difficultyFilter && difficultyFilter !== 'all') {
+    if (difficultyFilter && difficultyFilter !== "all") {
       filtered = filtered.filter((problem) => problem.difficulty === difficultyFilter)
     }
 
-    if (topicFilter && topicFilter !== 'all') {
+    if (topicFilter && topicFilter !== "all") {
       filtered = filtered.filter((problem) => problem.topic === topicFilter)
     }
 
@@ -74,6 +84,26 @@ export default function ProblemsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Problems</h1>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Crear Problema
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Crear Nuevo Problema</DialogTitle>
+              <DialogDescription>Completa el formulario para agregar un nuevo problema matemático</DialogDescription>
+            </DialogHeader>
+            <CreateProblemForm
+              onSuccess={() => {
+                // Refresh the problems list
+                window.location.reload()
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>

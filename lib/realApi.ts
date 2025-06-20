@@ -203,7 +203,11 @@ export const problemsAPI = {
 
   getRecommendations: async (userId: number): Promise<Problem[]> => {
     return await fetchAPI(`/problems/recommendations/${userId}`) as Problem[]
-  }
+  },
+
+  createProblem: async (problem: Omit<Problem, "id">): Promise<Problem> => {
+    return (await fetchAPI("/problems", "POST", problem)) as Problem
+  },
 }
 
 // Leaderboard API
