@@ -101,21 +101,22 @@ export interface Problem {
   id: number
   title: string
   description: string
-  difficulty: "easy" | "medium" | "hard"
+  difficulty: "easy" | "medium" | "hard" | "expert"
   topic: string
   pointValue: number
   xpValue?: number
   estimatedTime?: number
+  timeLimit?: number
   tags?: string[]
   concepts?: string[]
   prerequisites?: number[]
-  type?: "multiple-choice" | "short-answer" | "essay"
+  type: "multiple_choice" | "short_answer" | "essay" | "code" | "true_false"
   correctAnswer?: string
   choices?: string[]
   explanation?: string
-  timeLimit?: number // in seconds
   createdAt?: string
   updatedAt?: string
+  createdBy?: number
 }
 
 export interface ProblemAttempt {

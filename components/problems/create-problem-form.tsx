@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Plus, X, Save, Eye } from "lucide-react"
+import { Plus, X, Save, Eye, AlertCircle } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { problemsAPI } from "@/lib/realApi"
 import { useToast } from "@/components/ui/use-toast"
 
@@ -38,26 +39,26 @@ export function CreateProblemForm({ onSuccess }: CreateProblemFormProps) {
     description: "",
     topic: "",
     difficulty: "",
+    type: "",
     pointValue: 10,
-    xpValue: 15,
-    estimatedTime: 30,
+    xpValue: 5,
+    estimatedTime: 5,
+    timeLimit: 30,
     correctAnswer: "",
     explanation: "",
     concepts: [] as string[],
     tags: [] as string[],
-    prerequisites: [] as string[],
   })
 
   // Input states for adding arrays
   const [newConcept, setNewConcept] = useState("")
   const [newTag, setNewTag] = useState("")
-  const [newPrerequisite, setNewPrerequisite] = useState("")
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const addToArray = (field: "concepts" | "tags" | "prerequisites", value: string) => {
+  const addToArray = (field: "concepts" | "tags", value: string) => {
     if (value.trim() && !formData[field].includes(value.trim())) {
       setFormData((prev) => ({
         ...prev,
@@ -66,7 +67,7 @@ export function CreateProblemForm({ onSuccess }: CreateProblemFormProps) {
     }
   }
 
-  const removeFromArray = (field: "concepts" | "tags" | "prerequisites", index: number) => {
+  const removeFromArray = (field: "concepts" | "tags", index: number) => {
     setFormData((prev) => ({
       ...prev,
       [field]: prev[field].filter((_, i) => i !== index),
@@ -76,16 +77,55 @@ export function CreateProblemForm({ onSuccess }: CreateProblemFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Validate required fields
     if (
       !formData.title ||
       !formData.description ||
       !formData.topic ||
       !formData.difficulty ||
+      !formData.type ||
       !formData.correctAnswer
     ) {
       toast({
         title: "Error",
-        description: "Por favor completa todos los campos obligatorios",
+        description: "Por favor completa todos los campos obligatorios (*)",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validate numeric ranges
+    if (formData.pointValue < 1 || formData.pointValue > 1000) {
+      toast({
+        title: "Error",
+        description: "El valor de puntos debe estar entre 1 y 1000",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (formData.xpValue < 1 || formData.xpValue > 500) {
+      toast({
+        title: "Error",
+        description: "El valor de XP debe estar entre 1 y 500",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (formData.estimatedTime < 1 || formData.estimatedTime > 180) {
+      toast({
+        title: "Error",
+        description: "El tiempo estimado debe estar entre 1 y 180 minutos",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (formData.timeLimit < 1 || formData.timeLimit > 300) {
+      toast({
+        title: "Error",
+        description: "El límite de tiempo debe estar entre 1 y 300 minutos",
         variant: "destructive",
       })
       return
@@ -94,11 +134,19 @@ export function CreateProblemForm({ onSuccess }: CreateProblemFormProps) {
     setIsSubmitting(true)
     try {
       await problemsAPI.createProblem({
-        ...formData,
-        id: 0, // Will be assigned by backend
-        status: "active",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        title: formData.title,
+        description: formData.description,
+        difficulty: formData.difficulty,
+        topic: formData.topic,
+        type: formData.type,
+        pointValue: formData.pointValue,
+        xpValue: formData.xpValue,
+        estimatedTime: formData.estimatedTime,
+        timeLimit: formData.timeLimit,
+        correctAnswer: formData.correctAnswer,
+        explanation: formData.explanation,
+        tags: formData.tags,
+        concepts: formData.concepts,
       })
 
       toast({
@@ -112,21 +160,22 @@ export function CreateProblemForm({ onSuccess }: CreateProblemFormProps) {
         description: "",
         topic: "",
         difficulty: "",
+        type: "",
         pointValue: 10,
-        xpValue: 15,
-        estimatedTime: 30,
+        xpValue: 5,
+        estimatedTime: 5,
+        timeLimit: 30,
         correctAnswer: "",
         explanation: "",
         concepts: [],
         tags: [],
-        prerequisites: [],
       })
 
       onSuccess?.()
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudo crear el problema. Inténtalo de nuevo.",
+        description: error instanceof Error ? error.message : "No se pudo crear el problema. Inténtalo de nuevo.",
         variant: "destructive",
       })
       console.error("Error creating problem:", error)
@@ -145,10 +194,36 @@ export function CreateProblemForm({ onSuccess }: CreateProblemFormProps) {
     "differential-equations",
     "discrete-math",
     "number-theory",
+    "physics",
+    "chemistry",
+    "programming",
+  ]
+
+  const difficulties = [
+    { value: "easy", label: "Fácil" },
+    { value: "medium", label: "Medio" },
+    { value: "hard", label: "Difícil" },
+    { value: "expert", label: "Experto" },
+  ]
+
+  const problemTypes = [
+    { value: "multiple_choice", label: "Opción Múltiple" },
+    { value: "short_answer", label: "Respuesta Corta" },
+    { value: "essay", label: "Ensayo" },
+    { value: "code", label: "Código" },
+    { value: "true_false", label: "Verdadero/Falso" },
   ]
 
   return (
     <div className="space-y-6">
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Nota:</strong> Solo los profesores y administradores pueden crear problemas. Asegúrate de tener los
+          permisos necesarios.
+        </AlertDescription>
+      </Alert>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
@@ -166,21 +241,27 @@ export function CreateProblemForm({ onSuccess }: CreateProblemFormProps) {
                   <DialogDescription>Así se verá el problema para los estudiantes</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Badge
                       className={
                         formData.difficulty === "easy"
                           ? "bg-green-100 text-green-800"
                           : formData.difficulty === "medium"
                             ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
+                            : formData.difficulty === "hard"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-purple-100 text-purple-800"
                       }
                     >
-                      {formData.difficulty}
+                      {difficulties.find((d) => d.value === formData.difficulty)?.label || formData.difficulty}
                     </Badge>
                     <Badge variant="outline">{formData.topic}</Badge>
+                    <Badge variant="secondary">
+                      {problemTypes.find((t) => t.value === formData.type)?.label || formData.type}
+                    </Badge>
                     <span className="text-sm text-muted-foreground">
-                      {formData.pointValue} pts • {formData.xpValue} XP • ~{formData.estimatedTime}min
+                      {formData.pointValue} pts • {formData.xpValue} XP • ~{formData.estimatedTime}min • Límite:{" "}
+                      {formData.timeLimit}min
                     </span>
                   </div>
                   <div>
@@ -199,11 +280,25 @@ export function CreateProblemForm({ onSuccess }: CreateProblemFormProps) {
                       </div>
                     </div>
                   )}
+                  {formData.tags.length > 0 && (
+                    <div>
+                      <Label className="text-sm font-medium">Etiquetas:</Label>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {formData.tags.map((tag, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            #{tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </DialogContent>
             </Dialog>
           </CardTitle>
-          <CardDescription>Completa la información para crear un nuevo problema matemático</CardDescription>
+          <CardDescription>
+            Completa la información para crear un nuevo problema. Los campos marcados con (*) son obligatorios.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -248,8 +343,8 @@ export function CreateProblemForm({ onSuccess }: CreateProblemFormProps) {
               />
             </div>
 
-            {/* Configuración */}
-            <div className="grid gap-4 md:grid-cols-4">
+            {/* Configuración del Problema */}
+            <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="difficulty">Dificultad *</Label>
                 <Select value={formData.difficulty} onValueChange={(value) => handleInputChange("difficulty", value)}>
@@ -257,43 +352,74 @@ export function CreateProblemForm({ onSuccess }: CreateProblemFormProps) {
                     <SelectValue placeholder="Selecciona" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="easy">Fácil</SelectItem>
-                    <SelectItem value="medium">Medio</SelectItem>
-                    <SelectItem value="hard">Difícil</SelectItem>
+                    {difficulties.map((difficulty) => (
+                      <SelectItem key={difficulty.value} value={difficulty.value}>
+                        {difficulty.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pointValue">Puntos</Label>
+                <Label htmlFor="type">Tipo de Problema *</Label>
+                <Select value={formData.type} onValueChange={(value) => handleInputChange("type", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {problemTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pointValue">Puntos (1-1000)</Label>
                 <Input
                   id="pointValue"
                   type="number"
                   value={formData.pointValue}
                   onChange={(e) => handleInputChange("pointValue", Number.parseInt(e.target.value) || 0)}
                   min="1"
-                  max="100"
+                  max="1000"
                 />
               </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="xpValue">XP</Label>
+                <Label htmlFor="xpValue">XP (1-500)</Label>
                 <Input
                   id="xpValue"
                   type="number"
                   value={formData.xpValue}
                   onChange={(e) => handleInputChange("xpValue", Number.parseInt(e.target.value) || 0)}
                   min="1"
-                  max="200"
+                  max="500"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="estimatedTime">Tiempo (min)</Label>
+                <Label htmlFor="estimatedTime">Tiempo Estimado (1-180 min)</Label>
                 <Input
                   id="estimatedTime"
                   type="number"
                   value={formData.estimatedTime}
                   onChange={(e) => handleInputChange("estimatedTime", Number.parseInt(e.target.value) || 0)}
-                  min="5"
+                  min="1"
                   max="180"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="timeLimit">Límite de Tiempo (1-300 min)</Label>
+                <Input
+                  id="timeLimit"
+                  type="number"
+                  value={formData.timeLimit}
+                  onChange={(e) => handleInputChange("timeLimit", Number.parseInt(e.target.value) || 0)}
+                  min="1"
+                  max="300"
                 />
               </div>
             </div>
@@ -313,7 +439,7 @@ export function CreateProblemForm({ onSuccess }: CreateProblemFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="explanation">Explicación</Label>
+                <Label htmlFor="explanation">Explicación (Opcional)</Label>
                 <Textarea
                   id="explanation"
                   value={formData.explanation}
@@ -404,50 +530,6 @@ export function CreateProblemForm({ onSuccess }: CreateProblemFormProps) {
                     <button
                       type="button"
                       onClick={() => removeFromArray("tags", index)}
-                      className="ml-1 hover:text-destructive"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            {/* Prerequisites */}
-            <div className="space-y-3">
-              <Label>Prerrequisitos (IDs de problemas)</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={newPrerequisite}
-                  onChange={(e) => setNewPrerequisite(e.target.value)}
-                  placeholder="Ej: 1, 2, 3"
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault()
-                      addToArray("prerequisites", newPrerequisite)
-                      setNewPrerequisite("")
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    addToArray("prerequisites", newPrerequisite)
-                    setNewPrerequisite("")
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {formData.prerequisites.map((prereq, index) => (
-                  <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                    Problema {prereq}
-                    <button
-                      type="button"
-                      onClick={() => removeFromArray("prerequisites", index)}
                       className="ml-1 hover:text-destructive"
                     >
                       <X className="h-3 w-3" />
