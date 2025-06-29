@@ -188,16 +188,6 @@ export interface LeaderboardResponse {
   currentUserRank?: number
 }
 
-// Visualization types
-export interface Visualization {
-  id: number
-  title: string
-  description: string
-  visualizationType: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  dataPayload: any
-  topic: string
-}
 
 // Forum types
 export interface ForumCategory {

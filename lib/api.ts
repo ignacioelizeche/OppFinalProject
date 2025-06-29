@@ -10,7 +10,6 @@ export {
   calendarAPI, 
   problemsAPI, 
   leaderboardAPI, 
-  visualizationsAPI, 
   forumAPI,
   dashboardAPI,
   mockExamAPI

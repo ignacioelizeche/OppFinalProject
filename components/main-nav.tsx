@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { BookOpen, Calendar, Home, MessageSquare, Trophy, LineChart, FileText } from "lucide-react"
+import { BookOpen, Calendar, Home, MessageSquare, Trophy, FileText } from "lucide-react"
 
 const navItems = [
   {
@@ -31,11 +31,7 @@ const navItems = [
     href: "/leaderboard",
     icon: Trophy,
   },
-  {
-    name: "Visualizations",
-    href: "/visualizations",
-    icon: LineChart,
-  },
+
   {
     name: "Mock Exams",
     href: "/exams",

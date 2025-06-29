@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { BookOpen, Calendar, Home, MessageSquare, Trophy, LineChart, Menu, X } from "lucide-react"
+import { BookOpen, Calendar, Home, MessageSquare, Trophy, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
@@ -34,11 +34,7 @@ const navItems = [
     href: "/leaderboard",
     icon: Trophy,
   },
-  {
-    name: "Visualizations",
-    href: "/visualizations",
-    icon: LineChart,
-  },
+
 ]
 
 export function MobileNav() {

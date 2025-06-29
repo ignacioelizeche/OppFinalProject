@@ -8,7 +8,6 @@ import type {
   ForumPost,
   ForumCategory,
   Comment,
-  Visualization,
   DashboardStats,
   PDFDocument,
   PDFDocumentSession,
@@ -290,17 +289,6 @@ export const forumAPI = {
 
   getForumStats: async () => {
     return await fetchAPI("/forum/stats")
-  },
-}
-
-// Visualizations API
-export const visualizationsAPI = {
-  getVisualizations: async (): Promise<Visualization[]> => {
-    return (await fetchAPI("/visualizations")) as Visualization[]
-  },
-
-  getVisualization: async (id: number): Promise<Visualization> => {
-    return (await fetchAPI(`/visualizations/${id}`)) as Visualization
   },
 }
 

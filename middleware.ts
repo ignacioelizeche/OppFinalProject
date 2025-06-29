@@ -31,7 +31,6 @@ export const config = {
     "/problems/:path*",
     "/calendar/:path*",
     "/forum/:path*",
-    "/visualizations/:path*",
     "/leaderboard",
     "/login",
     "/register",
