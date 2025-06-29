@@ -1,4 +1,4 @@
-// File: C:\Users\ignac\OneDrive\Desktop\UPTP_third_semester\Delta-Frontend\app\(dashboard)\exams\[id]\view\page.tsx
+// File: C:\Users\LENOVO\OneDrive\Desktop\UPTP 3RD SEMESTER\OOP\OOP-FINAL_PROJECT\OppFinalProject\app\(dashboard)\exams\[id]\view\page.tsx
 import * as entry from '../../../../../../../app/(dashboard)/exams/[id]/view/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

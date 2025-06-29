@@ -1,4 +1,4 @@
-// File: C:\Users\ignac\OneDrive\Desktop\UPTP_third_semester\Delta-Frontend\app\(dashboard)\layout.tsx
+// File: C:\Users\LENOVO\OneDrive\Desktop\UPTP 3RD SEMESTER\OOP\OOP-FINAL_PROJECT\OppFinalProject\app\(dashboard)\layout.tsx
 import * as entry from '../../../../app/(dashboard)/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
