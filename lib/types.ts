@@ -389,3 +389,36 @@ export type ExamResult = PDFDocumentResult
 export type ExamStats = PDFDocumentStats
 export type ExamSession = PDFDocumentSession
 export type QuestionBank = never // No longer used
+
+// Achievement types
+export interface Achievement {
+  id: string
+  name: string
+  description: string
+  icon: string
+  tier: "Common" | "Uncommon" | "Rare" | "Epic" | "Legendary"
+  tierColor: string
+  requiredValue: number
+  currentValue: number
+  unlocked: boolean
+  progress: number // percentage (0-100)
+  unlockedDate?: string
+}
+
+export interface UserAchievementsResponse {
+  userId: number
+  achievements: Achievement[]
+  totalUnlocked: number
+  tier: string
+  tierColor: string
+  stats: {
+    level: number
+    xpPoints: number
+    problemsSolved: number
+    streak: number
+    forumContributions: number
+    hardProblems: number
+    mediumProblems: number
+    easyProblems: number
+  }
+}

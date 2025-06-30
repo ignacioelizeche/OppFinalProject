@@ -51,7 +51,7 @@ export function WeeklyOverview({ weeklyProgress }: WeeklyOverviewProps) {
      (weeklyProgress.conceptsMastered / weeklyProgress.targetConcepts)) / 3 * 100
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -66,7 +66,7 @@ export function WeeklyOverview({ weeklyProgress }: WeeklyOverviewProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="flex-1 space-y-6">
         {progressItems.map((item, index) => {
           const percentage = Math.min((item.current / item.target) * 100, 100)
           const Icon = item.icon

@@ -64,14 +64,14 @@ export function PerformanceHeatmap({ dates, activities }: PerformanceHeatmapProp
   const averageActivity = totalActivity / activities.length
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle className="text-lg">Performance Heatmap</CardTitle>
         <CardDescription>
           Your activity over the last {dates.length} days (Avg: {averageActivity.toFixed(1)})
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         <TooltipProvider>
           <div className="space-y-1">
             <div className="grid grid-cols-7 gap-1 text-xs text-muted-foreground mb-2">

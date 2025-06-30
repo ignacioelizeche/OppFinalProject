@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { CalendarEvent, Problem, DashboardStats, LeaderboardEntry } from "@/lib/types"
-import { calendarAPI, problemsAPI, dashboardAPI, leaderboardAPI } from "@/lib/realApi"
-import { Calendar, BookOpen, Trophy } from "lucide-react"
+import type { CalendarEvent, DashboardStats, LeaderboardEntry } from "@/lib/types"
+import { calendarAPI, dashboardAPI, leaderboardAPI } from "@/lib/realApi"
+import { Calendar, Trophy } from "lucide-react"
 import Link from "next/link"
 import { format } from "date-fns"
 
@@ -14,13 +14,13 @@ import { PersonalizedWelcomePanel } from "@/components/dashboard/personalized-we
 import { WeeklyOverview } from "@/components/dashboard/weekly-overview"
 import { PerformanceHeatmap } from "@/components/dashboard/performance-heatmap"
 import { TodaysFocus } from "@/components/dashboard/todays-focus"
-import { RecentAchievements } from "@/components/dashboard/recent-achievements"
 import { LeaderboardPreview } from "@/components/dashboard/leaderboard-preview"
+import LeaderboardRankCard from "@/components/leaderboard/leaderboard-rank-card"
+import { AchievementShowcase } from "@/components/dashboard/AchievementComponents"
 
 export default function DashboardPage() {
   const { user } = useAuth()
   const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([])
-  const [recentProblems, setRecentProblems] = useState<Problem[]>([])
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
   const [leaderboardData, setLeaderboardData] = useState<{ topUsers: LeaderboardEntry[], currentUser?: LeaderboardEntry }>({ topUsers: [] })
   const [isLoading, setIsLoading] = useState(true)
@@ -37,20 +37,13 @@ export default function DashboardPage() {
         const startDate = now.toISOString()
         const endDate = nextWeek.toISOString()
 
-        const [eventsData, problemsData, statsData, leaderboardResponse] = await Promise.all([
-          calendarAPI.getEvents(startDate, endDate, {
-            eventTypes: [],
-            priorities: [],
-            tags: [],
-            instructors: []
-          }).catch(() => []),
-          problemsAPI.getProblems({ limit: 5 }).catch(() => []),
+        const [eventsData, statsData, leaderboardResponse] = await Promise.all([
+          calendarAPI.getEvents(startDate, endDate).catch(() => []),
           dashboardAPI.getStats().catch(() => null),
           leaderboardAPI.getLeaderboard(10, 'weekly').catch(() => ({ users: [], totalUsers: 0, userRank: null })),
         ])
 
-        setUpcomingEvents(eventsData)
-        setRecentProblems(problemsData)
+        setUpcomingEvents(eventsData as CalendarEvent[])
         setDashboardStats(statsData)
         setLeaderboardData({
           topUsers: leaderboardResponse.users || [],
@@ -87,46 +80,15 @@ export default function DashboardPage() {
         {/* Personalized Welcome Panel */}
         <PersonalizedWelcomePanel user={user} />
 
-        {/* Main Dashboard Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Weekly Overview */}
-          {dashboardStats && (
-            <WeeklyOverview weeklyProgress={dashboardStats.weeklyProgress} />
-          )}
-
-          {/* Performance Heatmap */}
-          {dashboardStats && (
-            <PerformanceHeatmap 
-              dates={dashboardStats.performanceHeatmap.dates}
-              activities={dashboardStats.performanceHeatmap.activities}
-            />
-          )}
-
-
-          {/* Recent Achievements */}
-          {dashboardStats && (
-            <RecentAchievements achievements={dashboardStats.recentAchievements} />
-          )}
-        </div>
-
-        {/* Today's Focus */}
-        {dashboardStats && (
-          <TodaysFocus
-            upcomingDeadlines={upcomingEvents}
-            recommendedProblems={recentProblems}
-            activeGoals={dashboardStats.todaysFocus.activeGoals}
-          />
-        )}
-
-        {/* Legacy Quick Access Cards */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Upcoming Events Card */}
-          <Card>
+        {/* Main Dashboard Grid - Calendar, Achievements, and Leaderboard */}
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Calendar Card */}
+          <Card className="h-full">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
+              <CardTitle className="text-lg font-semibold">Upcoming Events</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1">
               {isLoading ? (
                 <div className="space-y-2">
                   {[...Array(3)].map((_, i) => (
@@ -138,7 +100,7 @@ export default function DashboardPage() {
                   {upcomingEvents.slice(0, 3).map((event) => (
                     <div key={event.id} className="flex items-center justify-between rounded-md border p-2">
                       <div>
-                        <div className="font-medium">{event.title}</div>
+                        <div className="font-medium text-sm">{event.title}</div>
                         <div className="text-xs text-muted-foreground">
                           {format(new Date(event.startTime), "MMM d, h:mm a")}
                         </div>
@@ -146,91 +108,93 @@ export default function DashboardPage() {
                       <div className="text-xs font-medium text-primary">{event.eventType}</div>
                     </div>
                   ))}
-                  <div className="pt-2">
-                    <Link href="/calendar" className="text-xs text-primary hover:underline">
-                      View all events
+                  <div className="pt-2 border-t">
+                    <Link href="/calendar" className="text-xs text-primary hover:underline flex items-center justify-center">
+                      View all events →
                     </Link>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-4 text-sm text-muted-foreground">No upcoming events</div>
+                <div className="text-center py-4">
+                  <div className="text-sm text-muted-foreground mb-2">No upcoming events</div>
+                  <Link href="/calendar" className="text-xs text-primary hover:underline">
+                    Go to Calendar →
+                  </Link>
+                </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Recent Problems Card */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Recent Problems</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-2">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-12 animate-pulse rounded-md bg-muted"></div>
-                  ))}
-                </div>
-              ) : recentProblems.length > 0 ? (
-                <div className="space-y-2">
-                  {recentProblems.slice(0, 3).map((problem) => (
-                    <div key={problem.id} className="flex items-center justify-between rounded-md border p-2">
-                      <div>
-                        <div className="font-medium">{problem.title}</div>
-                        <div className="text-xs text-muted-foreground">{problem.topic}</div>
-                      </div>
-                      <div className="text-xs font-medium">
-                        <span
-                          className={`px-2 py-1 rounded-full ${
-                            problem.difficulty === "easy"
-                              ? "bg-green-100 text-green-800"
-                              : problem.difficulty === "medium"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {problem.difficulty}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="pt-2">
-                    <Link href="/problems" className="text-xs text-primary hover:underline">
-                      View all problems
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-4 text-sm text-muted-foreground">No problems available</div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Achievements Section */}
+          <AchievementShowcase user={user} />
 
-          {/* Leaderboard Preview Card */}
-          <Card>
+          {/* Leaderboard Card */}
+          <Card className="h-full">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Leaderboard</CardTitle>
+              <CardTitle className="text-lg font-semibold">Leaderboard</CardTitle>
               <Trophy className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1">
               {isLoading ? (
                 <div className="space-y-2">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-12 animate-pulse rounded-md bg-muted"></div>
+                    <div key={i} className="h-16 animate-pulse rounded-md bg-muted"></div>
                   ))}
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {/* This would be populated with actual leaderboard data */}
-                  <div className="text-center py-4">
-                    <Link href="/leaderboard" className="text-primary hover:underline">
-                      View leaderboard
+              ) : leaderboardData.topUsers.length > 0 ? (
+                <div className="space-y-3">
+                  {leaderboardData.topUsers.slice(0, 3).map((user) => (
+                    <LeaderboardRankCard 
+                      key={user.id} 
+                      entry={user} 
+                      showDetails={false}
+                    />
+                  ))}
+                  <div className="pt-2 border-t">
+                    <Link href="/leaderboard" className="text-xs text-primary hover:underline flex items-center justify-center">
+                      View full leaderboard →
                     </Link>
                   </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <div className="text-sm text-muted-foreground mb-2">No leaderboard data</div>
+                  <Link href="/leaderboard" className="text-xs text-primary hover:underline">
+                    View leaderboard →
+                  </Link>
                 </div>
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* Today's Focus */}
+        {dashboardStats && (
+          <TodaysFocus
+            upcomingDeadlines={upcomingEvents}
+            recommendedProblems={[]}
+            activeGoals={dashboardStats.todaysFocus.activeGoals}
+          />
+        )}
+
+        {/* Secondary Cards Section */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Weekly Overview */}
+          {dashboardStats && (
+            <div className="h-full">
+              <WeeklyOverview weeklyProgress={dashboardStats.weeklyProgress} />
+            </div>
+          )}
+
+          {/* Performance Heatmap */}
+          {dashboardStats && (
+            <div className="h-full">
+              <PerformanceHeatmap 
+                dates={dashboardStats.performanceHeatmap.dates}
+                activities={dashboardStats.performanceHeatmap.activities}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

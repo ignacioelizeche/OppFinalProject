@@ -1,4 +1,4 @@
-// File: C:\Users\fabia\OneDrive\Escritorio\OppFinalProject\app\(dashboard)\calendar\page.tsx
+// File: c:\Users\fabia\OneDrive\Escritorio\OppFinalProject\app\(dashboard)\calendar\page.tsx
 import * as entry from '../../../../../app/(dashboard)/calendar/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

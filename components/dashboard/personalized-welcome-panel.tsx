@@ -16,8 +16,10 @@ export function PersonalizedWelcomePanel({ user }: PersonalizedWelcomePanelProps
   }
 
   const getCurrentLevelXP = (xpPoints: number, level: number) => {
-    const previousLevelsXP = Array.from({ length: level - 1 }, (_, i) => (i + 1) * 100).reduce((sum, xp) => sum + xp, 0)
-    return xpPoints - previousLevelsXP
+    // Calculate XP needed for current level (XP within current level)
+    const xpForCurrentLevel = (level - 1) * 100
+    const xpInCurrentLevel = xpPoints - xpForCurrentLevel
+    return Math.max(0, xpInCurrentLevel) // Ensure it's never negative
   }
 
   // Provide defaults for optional fields
@@ -29,7 +31,8 @@ export function PersonalizedWelcomePanel({ user }: PersonalizedWelcomePanelProps
 
   const xpForNextLevel = getXPForNextLevel(userLevel)
   const currentLevelXP = getCurrentLevelXP(userXpPoints, userLevel)
-  const progressPercentage = (currentLevelXP / xpForNextLevel) * 100
+  const progressPercentage = Math.min((currentLevelXP / xpForNextLevel) * 100, 100)
+  const xpToNextLevel = Math.max(0, xpForNextLevel - currentLevelXP)
 
   const memberSince = new Date(userJoinDate)
   const daysSinceMember = Math.floor((Date.now() - memberSince.getTime()) / (1000 * 60 * 60 * 24))
@@ -80,7 +83,7 @@ export function PersonalizedWelcomePanel({ user }: PersonalizedWelcomePanelProps
                 />
               </div>
               <div className="text-xs text-muted-foreground">
-                {xpForNextLevel - currentLevelXP} XP to next level
+                {xpToNextLevel} XP to next level
               </div>
             </div>
           </div>

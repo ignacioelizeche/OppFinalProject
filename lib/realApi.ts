@@ -4,6 +4,8 @@ import type {
   AuthResponse,
   User,
   LeaderboardResponse,
+  LeaderboardEntry,
+  LeaderboardStats,
   SubmitAnswerResponse,
   ForumPost,
   ForumCategory,
@@ -14,6 +16,8 @@ import type {
   PDFDocumentResult,
   ProblemAttempt,
   PDFDocumentStats,
+  Achievement,
+  UserAchievementsResponse,
 } from "./types"
 import { localAuthSystem, ensureDefaultUser } from "./localStorageAuth"
 
@@ -156,6 +160,201 @@ export const dashboardAPI = {
     return (await fetchAPI("/dashboard/stats")) as DashboardStats
   },
 }
+
+// Achievement API
+export const achievementAPI = {
+  // Get all available achievements
+  getAllAchievements: async (): Promise<{
+    achievements: Achievement[]
+    totalCount: number
+  }> => {
+    return (await fetchAPI("/achievements")) as {
+      achievements: Achievement[]
+      totalCount: number
+    }
+  },
+
+  // Get user's achievements with progress
+  getUserAchievements: async (userId: number): Promise<{
+    userId: number
+    achievements: Achievement[]
+    totalUnlocked: number
+    tier: string
+    tierColor: string
+    stats: {
+      level: number
+      xpPoints: number
+      problemsSolved: number
+      streak: number
+      forumContributions: number
+      hardProblems: number
+      mediumProblems: number
+      easyProblems: number
+    }
+  }> => {
+    return (await fetchAPI(`/achievements/user/${userId}`)) as {
+      userId: number
+      achievements: Achievement[]
+      totalUnlocked: number
+      tier: string
+      tierColor: string
+      stats: {
+        level: number
+        xpPoints: number
+        problemsSolved: number
+        streak: number
+        forumContributions: number
+        hardProblems: number
+        mediumProblems: number
+        easyProblems: number
+      }
+    }
+  },
+
+  // Check and unlock new achievements for a user
+  checkAndUnlockAchievements: async (userId: number): Promise<{
+    userId: number
+    newAchievements: Achievement[]
+    message: string
+    timestamp: string
+  }> => {
+    return (await fetchAPI(`/achievements/check/${userId}`, "POST")) as {
+      userId: number
+      newAchievements: Achievement[]
+      message: string
+      timestamp: string
+    }
+  },
+}
+
+// Achievements API
+export const achievementsAPI = {
+  getAllAchievements: async (): Promise<{ achievements: Achievement[], totalCount: number }> => {
+    return await fetchAPI("/achievements") as { achievements: Achievement[], totalCount: number }
+  },
+
+  getUserAchievements: async (userId: number): Promise<UserAchievementsResponse> => {
+    return await fetchAPI(`/achievements/user/${userId}`) as UserAchievementsResponse
+  },
+
+  checkAndUnlockAchievements: async (userId: number): Promise<{ userId: number, newAchievements: Achievement[], message: string, timestamp: string }> => {
+    return await fetchAPI(`/achievements/check/${userId}`, "POST") as { userId: number, newAchievements: Achievement[], message: string, timestamp: string }
+  },
+}
+
+// Enhanced LeaderboardEntry to include tier and achievements
+export interface EnhancedLeaderboardEntry extends LeaderboardEntry {
+  tier: string
+  tierColor: string
+  achievements: string[] // Array of achievement names
+}
+
+// Update the leaderboard API to use enhanced entries
+export const enhancedLeaderboardAPI = {
+  getLeaderboard: async (
+    limit?: number,
+    period?: "daily" | "weekly" | "monthly" | "all-time",
+  ): Promise<{
+    users: EnhancedLeaderboardEntry[]
+    stats: LeaderboardStats
+    currentUserRank?: number
+  }> => {
+    const queryParams = new URLSearchParams()
+    if (limit) queryParams.append("limit", limit.toString())
+    if (period) queryParams.append("period", period)
+
+    return (await fetchAPI(`/leaderboard?${queryParams.toString()}`)) as {
+      users: EnhancedLeaderboardEntry[]
+      stats: LeaderboardStats
+      currentUserRank?: number
+    }
+  },
+}
+
+// Utility functions for achievements
+export const achievementUtils = {
+  // Filter achievements by tier
+  filterByTier: (achievements: Achievement[], tier: Achievement["tier"]): Achievement[] => {
+    return achievements.filter(achievement => achievement.tier === tier)
+  },
+
+  // Get unlocked achievements only
+  getUnlocked: (achievements: Achievement[]): Achievement[] => {
+    return achievements.filter(achievement => achievement.unlocked)
+  },
+
+  // Get achievements in progress (not unlocked but have some progress)
+  getInProgress: (achievements: Achievement[]): Achievement[] => {
+    return achievements.filter(achievement => !achievement.unlocked && achievement.progress > 0)
+  },
+
+  // Get recently unlocked achievements
+  getRecentlyUnlocked: (achievements: Achievement[], days: number = 7): Achievement[] => {
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - days)
+    
+    return achievements.filter(achievement => 
+      achievement.unlocked && 
+      achievement.unlockedDate && 
+      new Date(achievement.unlockedDate) > cutoffDate
+    )
+  },
+
+  // Sort achievements by progress (descending)
+  sortByProgress: (achievements: Achievement[]): Achievement[] => {
+    return [...achievements].sort((a, b) => b.progress - a.progress)
+  },
+
+  // Sort achievements by tier (Legendary first)
+  sortByTier: (achievements: Achievement[]): Achievement[] => {
+    const tierOrder = { "Legendary": 5, "Epic": 4, "Rare": 3, "Uncommon": 2, "Common": 1 }
+    return [...achievements].sort((a, b) => tierOrder[b.tier] - tierOrder[a.tier])
+  },
+
+  // Get achievement statistics
+  getStats: (achievements: Achievement[]): {
+    total: number
+    unlocked: number
+    completionPercentage: number
+    byTier: Record<Achievement["tier"], number>
+  } => {
+    const total = achievements.length
+    const unlocked = achievements.filter(a => a.unlocked).length
+    const completionPercentage = total > 0 ? (unlocked / total) * 100 : 0
+    
+    const byTier = achievements.reduce((acc, achievement) => {
+      acc[achievement.tier] = (acc[achievement.tier] || 0) + (achievement.unlocked ? 1 : 0)
+      return acc
+    }, {} as Record<Achievement["tier"], number>)
+    
+    return {
+      total,
+      unlocked,
+      completionPercentage,
+      byTier
+    }
+  },
+
+  // Get tier information
+  getTierInfo: (tier: string): {
+    name: string
+    color: string
+    description: string
+  } => {
+    const tierMap = {
+      "Grandmaster": { name: "Grandmaster", color: "#ff6b6b", description: "The ultimate achievement level" },
+      "Diamond": { name: "Diamond", color: "#b19cd9", description: "Exceptional mastery and dedication" },
+      "Platinum": { name: "Platinum", color: "#00d4aa", description: "Advanced skill and consistency" },
+      "Gold": { name: "Gold", color: "#ffd700", description: "Strong performance and growth" },
+      "Silver": { name: "Silver", color: "#c0c0c0", description: "Good progress and development" },
+      "Bronze": { name: "Bronze", color: "#cd7f32", description: "Solid foundation building" },
+      "Iron": { name: "Iron", color: "#8b8b8b", description: "Starting your journey" }
+    }
+    
+    return tierMap[tier as keyof typeof tierMap] || tierMap["Iron"]
+  }
+}
+
 
 // Calendar API
 export const calendarAPI = {

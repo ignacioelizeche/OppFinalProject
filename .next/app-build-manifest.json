@@ -1,9 +1,9 @@
 {
   "pages": {
-    "/(auth)/login/page": [
+    "/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(auth)/login/page.js"
+      "static/chunks/app/page.js"
     ],
     "/layout": [
       "static/chunks/webpack.js",
@@ -11,10 +11,10 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/page": [
+    "/(auth)/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/page.js"
+      "static/chunks/app/(auth)/login/page.js"
     ],
     "/(dashboard)/dashboard/page": [
       "static/chunks/webpack.js",
@@ -26,15 +26,20 @@
       "static/chunks/main-app.js",
       "static/chunks/app/(dashboard)/layout.js"
     ],
-    "/(dashboard)/exams/page": [
+    "/(dashboard)/problems/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(dashboard)/exams/page.js"
+      "static/chunks/app/(dashboard)/problems/page.js"
     ],
-    "/(dashboard)/exams/loading": [
+    "/(dashboard)/problems/loading": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(dashboard)/exams/loading.js"
+      "static/chunks/app/(dashboard)/problems/loading.js"
+    ],
+    "/(dashboard)/problems/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(dashboard)/problems/[id]/page.js"
     ],
     "/(dashboard)/leaderboard/page": [
       "static/chunks/webpack.js",
@@ -46,30 +51,25 @@
       "static/chunks/main-app.js",
       "static/chunks/app/(dashboard)/leaderboard/loading.js"
     ],
-    "/(dashboard)/forum/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(dashboard)/forum/page.js"
-    ],
-    "/(dashboard)/forum/loading": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(dashboard)/forum/loading.js"
-    ],
     "/(dashboard)/calendar/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/(dashboard)/calendar/page.js"
     ],
-    "/(dashboard)/problems/page": [
+    "/(dashboard)/exams/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(dashboard)/problems/page.js"
+      "static/chunks/app/(dashboard)/exams/page.js"
     ],
-    "/(dashboard)/problems/loading": [
+    "/(dashboard)/exams/loading": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(dashboard)/problems/loading.js"
+      "static/chunks/app/(dashboard)/exams/loading.js"
+    ],
+    "/(auth)/register/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(auth)/register/page.js"
     ]
   }
 }
