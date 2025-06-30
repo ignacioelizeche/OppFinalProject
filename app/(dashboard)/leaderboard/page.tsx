@@ -17,15 +17,15 @@ export default function LeaderboardPage() {
   const [filteredLeaderboard, setFilteredLeaderboard] = useState<LeaderboardEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'all-time'>('all-time')
-  const [limit, setLimit] = useState(25)
+  const [timeframe, setTimeframe] = useState<'weekly' | 'monthly' | 'all'>('all')
+  const [limit, setLimit] = useState(50)
   const [showOnlyActive, setShowOnlyActive] = useState(false)
   const { toast } = useToast()
 
   const fetchLeaderboard = useCallback(async () => {
     setIsLoading(true)
     try {
-      const data = await leaderboardAPI.getLeaderboard(limit, period)
+      const data = await leaderboardAPI.getLeaderboard(limit, timeframe)
       setLeaderboardData(data)
     } catch (error) {
       console.error("Failed to fetch leaderboard:", error)
@@ -37,7 +37,7 @@ export default function LeaderboardPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [limit, period, toast])
+  }, [limit, timeframe, toast])
 
   const filterLeaderboard = useCallback(() => {
     if (!leaderboardData) return
@@ -70,8 +70,8 @@ export default function LeaderboardPage() {
     filterLeaderboard()
   }, [filterLeaderboard])
 
-  const getPeriodTitle = () => {
-    switch (period) {
+  const getTimeframeTitle = () => {
+    switch (timeframe) {
       case 'weekly':
         return 'This Week'
       case 'monthly':
@@ -81,8 +81,8 @@ export default function LeaderboardPage() {
     }
   }
 
-  const getPeriodIcon = () => {
-    switch (period) {
+  const getTimeframeIcon = () => {
+    switch (timeframe) {
       case 'weekly':
         return <TrendingUp className="h-5 w-5" />
       case 'monthly':
@@ -100,8 +100,8 @@ export default function LeaderboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center space-x-3">
-            {getPeriodIcon()}
-            <span>Leaderboard - {getPeriodTitle()}</span>
+            {getTimeframeIcon()}
+            <span>Leaderboard - {getTimeframeTitle()}</span>
           </h1>
           <p className="text-muted-foreground">
             See how you rank among your peers and discover top performers
@@ -140,8 +140,8 @@ export default function LeaderboardPage() {
       <LeaderboardFilters
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        period={period}
-        onPeriodChange={setPeriod}
+        timeframe={timeframe}
+        onTimeframeChange={setTimeframe}
         limit={limit}
         onLimitChange={setLimit}
         showOnlyActive={showOnlyActive}
@@ -244,4 +244,3 @@ export default function LeaderboardPage() {
     </div>
   )
 }
-
