@@ -60,8 +60,7 @@ This frontend implements core object-oriented concepts using a modern architectu
    ```bash
    git clone https://github.com/ignacioelizeche/OppFinalProject.git
    cd OppFinalProject
-````
-
+   ```
 2. Install dependencies:
 
    ```bash
@@ -85,7 +84,7 @@ This frontend implements core object-oriented concepts using a modern architectu
    ```
 
 5. Open your browser and go to:
-   `http://localhost:3000`
+   `http://localhost:8081`
 
 ---
 
