@@ -1,14 +1,26 @@
-
 # OppFinalProject
 
-Final project repository for the Object-Oriented Programming (OOP) course at UPTP.  
-Developed by **ignacioelizeche** using TypeScript.
+**Frontend** of the final project for the Object-Oriented Programming (OOP) course at UPTP.  
+Developed using **TypeScript** and **Next.js**.
+
+> ⚠️ This repository contains **only the frontend** of the project.
+
+---
+
+## 👨‍💻 Authors
+
+This frontend was developed by:
+
+- **Ignacio Elizeche** *(repository maintainer)*
+- **Efraín Brítez**
+- **Joaquín Fernández**
+- **Fabián Ramos**
 
 ---
 
 ## 📘 Overview
 
-This project applies the core concepts learned throughout the OOP course using a modern architecture based on Next.js/React. It demonstrates the use of classes, inheritance, interfaces, components, state management, custom hooks, and modular project structure.
+This frontend implements core object-oriented concepts using a modern architecture with React and TypeScript. It includes reusable components, state management with hooks and contexts, and clean code organization with Tailwind CSS for styling.
 
 ---
 
@@ -17,27 +29,27 @@ This project applies the core concepts learned throughout the OOP course using a
 ```
 
 /
-├── app/                # Frontend source code (Next.js)
-├── components/         # Reusable UI components
-├── contexts/           # React Context Providers
-├── hooks/              # Custom React hooks
-├── lib/                # Helpers and utilities
-├── middleware.ts       # Middleware logic (e.g., auth)
-├── .env.example        # Environment variable sample
-├── next.config.js      # Next.js config
-├── tailwind.config.ts  # Tailwind CSS config
-└── tsconfig.json       # TypeScript configuration
+├── app/                # Main Next.js application
+├── components/         # UI components
+├── contexts/           # React Contexts
+├── hooks/              # Custom Hooks
+├── lib/                # Helpers and utility functions
+├── middleware.ts       # Middleware (e.g., auth logic)
+├── .env.example        # Sample environment file
+├── next.config.js      # Next.js configuration
+├── tailwind.config.ts  # Tailwind configuration
+└── tsconfig.json       # TypeScript config
 
 ````
 
 ---
 
-## 🛠️ Technologies Used
+## 🛠️ Technologies
 
-- **TypeScript**  
-- **Next.js / React**  
-- **Tailwind CSS**  
-- Clean and scalable component-based architecture
+- TypeScript  
+- Next.js (React)  
+- Tailwind CSS  
+- Modular architecture with Context API and Hooks
 
 ---
 
@@ -58,13 +70,13 @@ This project applies the core concepts learned throughout the OOP course using a
    yarn install
    ```
 
-3. Create an environment file:
+3. Setup environment variables:
 
    ```bash
    cp .env.example .env.local
    ```
 
-4. Run the development server:
+4. Start the development server:
 
    ```bash
    npm run dev
@@ -72,49 +84,34 @@ This project applies the core concepts learned throughout the OOP course using a
    yarn dev
    ```
 
-5. Open your browser at: `http://localhost:3000`
+5. Open your browser and go to:
+   `http://localhost:3000`
 
 ---
 
-## 🧪 Usage and Contribution
+## 🙌 Contributions
 
-* Explore the `components/` folder for reusable elements.
-* Use the `contexts/` directory for global state management.
-* Business logic or helpers can go in `lib/`.
-* Use `hooks/` to define custom logic with React Hooks.
-* Please document any new code or modules clearly.
-
----
-
-## 🙌 Credits
-
-* Developed by **ignacioelizeche** as a final project for the OOP course at UPTP.
-* Inspired by standard Next.js + TypeScript patterns and Tailwind CSS setups.
+If you'd like to contribute to the frontend, feel free to fork the repo and submit a pull request.
+Make sure to document any new code or components clearly.
 
 ---
 
 ## 📄 License
 
 This project is licensed under the **MIT License**.
-See the `LICENSE` file for more information.
+See the `LICENSE` file for full details.
 
 ---
 
 ## 📬 Contact
 
-You can reach me via GitHub:
+For inquiries, reach out via GitHub:
 [https://github.com/ignacioelizeche](https://github.com/ignacioelizeche)
 
 ---
 
-⌨️ **Thanks for visiting the project!**
+## 🔗 APA Reference
 
-```
-
----
-
-### 🔗 APA-formatted Reference
-
-> ignacioelizeche. (n.d.). *OppFinalProject* [GitHub repository]. GitHub. https://github.com/ignacioelizeche/OppFinalProject
+> Elizeche, I., Brítez, E., Fernández, J., & Ramos, F. (n.d.). *OppFinalProject* \[GitHub repository frontend]. GitHub. [https://github.com/ignacioelizeche/OppFinalProject](https://github.com/ignacioelizeche/OppFinalProject)
 
 ```
