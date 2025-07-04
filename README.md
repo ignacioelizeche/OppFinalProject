@@ -1,7 +1,3 @@
-Here’s your `README.md` translated and adapted to English, following clear documentation structure:
-
----
-
 ```markdown
 # OppFinalProject
 
