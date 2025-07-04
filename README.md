@@ -98,5 +98,3 @@ For inquiries, reach out via GitHub:
 ## 🔗 APA Reference
 
 > Elizeche, I., Brítez, E., Fernández, J., & Ramos, F. (n.d.). *OppFinalProject* \[GitHub repository frontend]. GitHub. [https://github.com/ignacioelizeche/OppFinalProject](https://github.com/ignacioelizeche/OppFinalProject)
-
-```
