@@ -88,20 +88,6 @@ This frontend implements core object-oriented concepts using a modern architectu
 
 ---
 
-## 🙌 Contributions
-
-If you'd like to contribute to the frontend, feel free to fork the repo and submit a pull request.
-Make sure to document any new code or components clearly.
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License**.
-See the `LICENSE` file for full details.
-
----
-
 ## 📬 Contact
 
 For inquiries, reach out via GitHub:
